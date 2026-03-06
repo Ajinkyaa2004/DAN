@@ -1,0 +1,14 @@
+# FastAPI Backend - Railway Configuration
+
+# This file configures deployment on Railway.app
+# Railway automatically detects Python and installs dependencies from requirements.txt
+
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

@@ -1,0 +1,126 @@
+.dashboard {
+  max-width: 1440px;
+  margin: 0 auto;
+  zoom: 0.82;
+}
+
+/* Dashboard Title */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+}
+
+.dashboard-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.3rem;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-navigation::-webkit-scrollbar { height: 3px; }
+.tab-navigation::-webkit-scrollbar-thumb { background: var(--border); }
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.4rem;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: var(--transition);
+  letter-spacing: 0.2px;
+}
+
+.tab-button:hover {
+  background: var(--bg-page);
+  color: var(--text-primary);
+}
+
+.tab-button.active {
+  background: var(--blue-primary);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.35);
+}
+
+.tab-button.active svg {
+  opacity: 1;
+}
+
+.tab-button svg {
+  opacity: 0.7;
+}
+
+/* Tab Panel */
+.tab-panel {
+  animation: fadeUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Chart Card */
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.chart-card:hover { box-shadow: var(--shadow-md); }
+
+.chart-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.chart-card-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.chart-card-title svg { color: var(--blue-primary); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-title { font-size: 1.1rem; }
+  .tab-button { padding: 0.45rem 0.75rem; font-size: 0.75rem; }
+}

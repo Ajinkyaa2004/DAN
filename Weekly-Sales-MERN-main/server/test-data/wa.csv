@@ -1,0 +1,3 @@
+Entity Name,Branch Region,Branch,Division,Due Date,Top Level Customer ID,Top Level Customer Name,Customer ID,Customer,Billing Group ID,Billing Group,Invoice ID,Invoice #,Issue Date,Total,Outstanding,Delivery,Status
+EntA,RegionA,WA,DivA,01/02/2023,1,TopCustA,10,CustA,100,BillA,1002,INV-WA-1,10/01/2023,3,0,Deliv,Open
+

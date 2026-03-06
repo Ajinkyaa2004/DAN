@@ -1,0 +1,48 @@
+.growth-heatmap {
+  margin-bottom: 2.5rem;
+}
+
+.subsection-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.subsection-title svg {
+  color: #666;
+  flex-shrink: 0;
+}
+
+.heatmap-container {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.heatmap-container:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.chart-subtitle {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #666;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.no-data-message {
+  padding: 2rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ebf0 100%);
+  border-radius: 12px;
+  text-align: center;
+  color: #666;
+  font-size: 0.95rem;
+}

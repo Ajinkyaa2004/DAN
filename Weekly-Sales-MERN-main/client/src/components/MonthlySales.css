@@ -1,0 +1,9 @@
+.monthly-sales {
+  margin-bottom: 3rem;
+}
+
+.monthly-sales .loading {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}

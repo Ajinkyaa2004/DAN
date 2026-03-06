@@ -1,0 +1,21 @@
+.customer-analysis-tab {
+  padding: 20px;
+}
+
+.main-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .customer-analysis-tab {
+    padding: 10px;
+  }
+
+  .main-title {
+    font-size: 20px;
+  }
+}
