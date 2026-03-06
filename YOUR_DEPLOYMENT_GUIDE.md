@@ -1,15 +1,19 @@
 # 🚀 YOUR PERSONALIZED DEPLOYMENT GUIDE
-## DAN Dashboard Suite - Deploy to Production in 15 Minutes
+## DAN Dashboard Suite - Deploy to Vercel in 20 Minutes
 
 Your GitHub Repository: **https://github.com/Ajinkyaa2004/DAN** ✅
+
+**Updated:** March 6, 2026 - ALL components now deploy to Vercel  
+**Platform:** Vercel (100% of stack)  
+**Cost:** $0/month (Hobby plan)
 
 ---
 
 ## 📋 What You Need
 
-1. **Accounts** (Sign up with GitHub - takes 2 minutes):
-   - [Vercel Account](https://vercel.com/signup) 
-   - [Railway Account](https://railway.app/) 
+1. **Vercel Account** (Sign up with GitHub - takes 2 minutes):
+   - [Create Account](https://vercel.com/signup)
+   - Choose "Hobby" (Free) plan
 
 2. **Vercel CLI** (Install now):
    ```bash
@@ -19,43 +23,60 @@ Your GitHub Repository: **https://github.com/Ajinkyaa2004/DAN** ✅
 
 ---
 
-## 🎯 STEP-BY-STEP DEPLOYMENT
+## 🎯 DEPLOYMENT ORDER (Follow This Sequence!)
 
-### **STEP 1: Deploy FastAPI Backend on Railway** (3 minutes)
+Deploy backends first to get their URLs, then frontends:
 
-1. **Go to Railway**: https://railway.app/new
+1. ✅ FastAPI Backend (Python) → Get URL
+2. ✅ Shared Storage Backend (Express) → Get URL  
+3. ✅ Weekly Sales Backend (Express) → Get URL
+4. ✅ Business Compass Frontend (Next.js) → Uses URLs from steps 1+2
+5. ✅ Weekly Sales Frontend (React) → Uses URL from step 3
+6. ✅ Unified Landing Page (React) → Uses URL from step 2
 
-2. **Click "Deploy from GitHub repo"**
+---
 
-3. **Select your repository**: 
-   - Choose `Ajinkyaa2004/DAN`
-   - Select the `fastapi-backend` folder
+## 🐍 STEP 1: Deploy FastAPI Backend (Python)
 
-4. **Railway will auto-detect Python and deploy**
-   - It reads `railway.toml` for configuration
-   - Just click "Deploy" and wait
+1. **Navigate to FastAPI directory**:
+   ```bash
+   cd /Users/ajinkya/Desktop/DAN/fastapi-backend
+   ```
 
-5. **Generate a Domain**:
-   - Go to Settings → Networking
-   - Click "Generate Domain"
-   - You'll get something like: `https://dan-dashboard-production.up.railway.app`
+2. **Deploy to Vercel**:
+   ```bash
+   vercel --prod
+   ```
 
-6. **📝 SAVE THIS URL** - Write it down:
+3. **Answer the prompts**:
+   - Set up and deploy? → **Y**
+   - Which scope? → Select your account
+   - Link to existing project? → **N**
+   - Project name? → **dan-fastapi-backend** (or your choice)
+   - Directory? → **./** (press Enter)
+   - Override settings? → **N**
+
+4. **Wait for deployment** (~1 minute)
+   - Vercel detects Python automatically
+   - Uses `vercel.json` configuration
+   - Installs from `requirements.txt`
+
+5. **📝 SAVE THIS URL** - Write it here:
    ```
    My FastAPI URL: ________________________________________
    ```
 
-7. **Test it**:
+6. **Test it**:
    ```bash
-   curl https://your-fastapi-url.up.railway.app/health
-   # Should return: {"status": "ok"}
+   curl https://your-fastapi-url.vercel.app/api/health
+   # Should return: {"status":"healthy","service":"business-compass-backend","version":"1.0.0"}
    ```
 
-✅ **FastAPI Backend is LIVE!**
+✅ **FastAPI Backend is LIVE on Vercel!**
 
 ---
 
-### **STEP 2: Deploy Unified Landing Backend** (2 minutes)
+## 🔧 STEP 2: Deploy Shared Storage Backend (Express)
 
 1. **Open Terminal and navigate**:
    ```bash
@@ -135,8 +156,8 @@ Your GitHub Repository: **https://github.com/Ajinkyaa2004/DAN** ✅
    
    Paste this (replace with YOUR URLs from steps above):
    ```
-   NEXT_PUBLIC_FASTAPI_URL=https://your-fastapi-url.up.railway.app
-   NEXT_PUBLIC_SHARED_STORAGE_URL=https://dan-unified-backend.vercel.app
+   NEXT_PUBLIC_FASTAPI_URL=https://your-fastapi-url.vercel.app
+   NEXT_PUBLIC_SHARED_STORAGE_URL=https://your-unified-backend-url.vercel.app
    ```
    
    - Press `Ctrl+X`, then `Y`, then `Enter` to save
@@ -149,14 +170,15 @@ Your GitHub Repository: **https://github.com/Ajinkyaa2004/DAN** ✅
    - Project name? → **dan-business-compass**
    - Other prompts → Press Enter
 
-4. **Set additional environment variables in Vercel Dashboard**:
+4. **Set environment variables in Vercel**:
    - Go to: https://vercel.com/dashboard
    - Click on `dan-business-compass` project
    - Go to **Settings** → **Environment Variables**
-   - Click **Add New**
-   - Add these two variables:
-     - Key: `NEXT_PUBLIC_FASTAPI_URL` → Value: Your FastAPI URL
-     - Key: `NEXT_PUBLIC_SHARED_STORAGE_URL` → Value: Your Unified Backend URL
+   - Add these two (use Production environment):
+     ```
+     NEXT_PUBLIC_FASTAPI_URL → https://your-fastapi-url.vercel.app
+     NEXT_PUBLIC_SHARED_STORAGE_URL → https://your-unified-backend-url.vercel.app
+     ```
 
 5. **Deploy to production**:
    ```bash
@@ -266,9 +288,28 @@ Your GitHub Repository: **https://github.com/Ajinkyaa2004/DAN** ✅
 
 Now that all frontends are deployed, update backends to allow requests from your frontend URLs.
 
+#### Update FastAPI Backend CORS:
+```bash
+cd /Users/ajinkya/Desktop/DAN/fastapi-backend
+```
+
+**Add CORS environment variable in Vercel Dashboard**:
+1. Go to: https://vercel.com/dashboard
+2. Click on `dan-fastapi-backend` project
+3. Settings → Environment Variables
+4. Add new variable:
+   - Key: `CORS_ORIGINS`
+   - Value: `https://dan-business-compass.vercel.app`
+   - Environment: Production
+
+**Redeploy**:
+```bash
+vercel --prod
+```
+
 #### Update Unified Backend CORS:
 ```bash
-cd ../../Unified-Landing-Page/backend
+cd ../Unified-Landing-Page/backend
 ```
 
 **Add CORS environment variable**:
@@ -306,7 +347,7 @@ https://dan-weekly-sales.vercel.app
 vercel --prod
 ```
 
-✅ **CORS Configured!**
+✅ **CORS Configured for All Backends!**
 
 ---
 
@@ -316,18 +357,31 @@ vercel --prod
 
 1. **Business Compass**: https://dan-business-compass.vercel.app
    - Main analytics dashboard with 7 tabs
+   - Shows revenue, expenses, expansion metrics
+   - Displays branch codes: WA, NSW, QLD ✓
 
 2. **Unified Landing Page**: https://dan-unified-landing.vercel.app
    - Central upload portal (share this with users!)
+   - Upload combined CSV or separate branch files
+   - Routes data to Business Compass dashboard
 
 3. **Weekly Sales**: https://dan-weekly-sales.vercel.app
    - Standalone sales analysis tool
+   - Weekly revenue tracking
 
-### Your Backend APIs:
+### Your Backend APIs (All on Vercel):
 
-- **FastAPI**: https://your-app.up.railway.app
-- **Unified Backend**: https://dan-unified-backend.vercel.app
-- **Weekly Backend**: https://dan-weekly-backend.vercel.app
+- **FastAPI Backend**: https://dan-fastapi-backend.vercel.app
+  - Health: `/api/health`
+  - Upload: `/api/ingest/upload`
+
+- **Shared Storage Backend**: https://dan-unified-backend.vercel.app
+  - Health: `/health`
+  - Upload: `/api/upload`
+
+- **Weekly Sales Backend**: https://dan-weekly-backend.vercel.app
+  - Health: `/health`
+  - Analysis: `/api/analysis`
 
 ---
 
@@ -336,7 +390,7 @@ vercel --prod
 ### Test 1: Check Backend Health
 ```bash
 # FastAPI
-curl https://your-fastapi-url.up.railway.app/health
+curl https://dan-fastapi-backend.vercel.app/api/health
 
 # Unified Backend
 curl https://dan-unified-backend.vercel.app/health
@@ -375,22 +429,21 @@ All should return `200 OK`
 # Check current env vars
 vercel env ls
 
-# If missing, add them again
+# If missing, add them in Vercel Dashboard
+# Or use CLI:
 vercel env add CORS_ORIGINS production
 vercel --prod
 ```
 
-### Issue: FastAPI Takes 30-60 Seconds to Respond
+### Issue: Vercel Functions Timeout (10s limit)
 
-**This is NORMAL!** Railway free tier puts apps to sleep after 15 minutes of inactivity.
-
-- First request after sleep: 30-60 seconds (waking up)
-- Subsequent requests: <1 second
+**This affects**: Large file uploads (>50MB) or complex processing
 
 **Solutions**:
-- Just wait for first request
-- Or set up a cron job to ping every 10 minutes
-- Or upgrade Railway to paid tier ($5/month)
+- Break down large files into smaller chunks
+- Optimize processing logic
+- Use Vercel Pro ($20/month) for 60s timeout
+- For very large files, consider alternative storage (S3, etc.)
 
 ### Issue: Environment Variables Not Working
 
@@ -401,20 +454,24 @@ cd <project-folder>
 vercel --prod
 ```
 
+Always add environment variables through Vercel Dashboard for persistence.
+
 ### Issue: Wrong URLs or Branch Names
 
 **Solution**: Check browser console (F12) for errors
 
 - Verify environment variables in Vercel Dashboard
 - Make sure all URLs are correct (no typos)
+- Check that URLs start with `https://` (not `http://`)
 - Redeploy if you fixed any URLs
 
 ### Issue: File Upload Fails
 
 **Check**:
-- File size under 50MB
+- File size under 50MB (Vercel function limit)
 - Correct file format (CSV or XLSX)
 - Backend responding (health check)
+- Network tab in browser DevTools for detailed error
 
 ---
 
@@ -422,20 +479,25 @@ vercel --prod
 
 ### Vercel Dashboard
 - Go to: https://vercel.com/dashboard
-- View all your deployments
-- Check analytics (free tier available)
-- View logs for debugging
+- View all 6 deployments in one place
+- Check analytics (included in free tier)
+- View real-time logs for debugging
+- Monitor function execution times
+- Track bandwidth usage
 
-### Railway Dashboard
-- Go to: https://railway.app/dashboard
-- Monitor FastAPI usage
-- Check if you're staying under $5 credit
-- View logs
+### Vercel Free Tier Limits (Hobby Plan)
+- ✅ **Bandwidth**: 100GB/month
+- ✅ **Function Executions**: 100GB-Hours/month
+- ✅ **Build Time**: 6000 minutes/month
+- ✅ **Deployments**: Unlimited
+- ✅ **Team Members**: 1 (you)
 
-### Usage Limits (Free Tier)
-- **Vercel**: 100GB bandwidth/month ✅
-- **Railway**: $5 credit/month (~500 hours) ✅
-- **Total Cost**: $0/month 🎉
+**Your Usage**: Should stay well under limits for typical usage
+
+### Recommended: Enable Vercel Analytics
+1. Go to each frontend project in dashboard
+2. Click "Analytics" tab
+3. Enable Web Analytics (free)
 
 ---
 
@@ -463,26 +525,33 @@ Now every time you push to GitHub, Vercel auto-deploys! 🚀
 
 ## 💡 PRO TIPS
 
-1. **Custom Domain**: Add free custom domain in Vercel Dashboard → Settings → Domains
+1. **Custom Domain**: Add a free custom domain in Vercel Dashboard → Settings → Domains
+   - Example: `business-compass.yourdomain.com`
+   - Free SSL included automatically
 
-2. **Keep Railway Active**: Visit your FastAPI URL once a day or set up a cron job:
-   ```bash
-   # Add to crontab (runs every 10 minutes)
-   */10 * * * * curl https://your-app.up.railway.app/health
-   ```
+2. **Enable Auto-Deploy**: Connect Vercel to GitHub for automatic deployments
+   - Settings → Git → Connect Repository
+   - Every push to `main` branch auto-deploys
 
-3. **Enable Analytics**: Free in Vercel Dashboard for all projects
+3. **Monitor Performance**: Use Vercel Analytics (free)
+   - Dashboard → Analytics tab
+   - Track page views, performance metrics, Web Vitals
 
 4. **Set Up Alerts**: Get notified of deployment failures
-   - Vercel: Settings → Notifications
-   - Railway: Settings → Alerts
+   - Settings → Notifications
+   - Enable email notifications for failed builds
 
-5. **Optimize Bundle Size**:
+5. **Optimize Bundle Size**: Check Next.js and React build sizes
    ```bash
    npm run build
-   # Check the build size
-   # Remove unused dependencies if too large
+   # Review the build output
+   # Remove unused dependencies if bundles are too large
    ```
+
+6. **Environment Variables Best Practices**:
+   - Never commit `.env` files to Git
+   - Always use Vercel Dashboard for production env vars
+   - Use `vercel env pull` to sync local development
 
 ---
 
@@ -492,23 +561,24 @@ Fill this out and save it somewhere safe:
 
 ```
 === DAN Dashboard Suite - Production URLs ===
+Deployed: March 6, 2026 | Platform: Vercel (All components)
 
 Frontends:
 - Business Compass: ______________________________
 - Unified Landing: ______________________________
 - Weekly Sales: ______________________________
 
-Backends:
-- FastAPI: ______________________________
-- Unified Backend: ______________________________
-- Weekly Backend: ______________________________
+Backends (All on Vercel):
+- FastAPI (Python): ______________________________
+- Unified Backend (Express): ______________________________
+- Weekly Backend (Express): ______________________________
 
 Admin:
 - Vercel Dashboard: https://vercel.com/dashboard
-- Railway Dashboard: https://railway.app/dashboard
 - GitHub Repo: https://github.com/Ajinkyaa2004/DAN
 
 Deployment Date: ______________________________
+Total Cost: $0/month (Vercel Free Tier)
 ```
 
 ---
@@ -516,26 +586,41 @@ Deployment Date: ______________________________
 ## 🆘 NEED HELP?
 
 ### Documentation in Your Repo:
-- `DEPLOYMENT_GUIDE.md` - Full detailed guide
+- `YOUR_DEPLOYMENT_GUIDE.md` - This comprehensive guide
+- `DEPLOYMENT_GUIDE.md` - Alternative detailed guide
 - `DEPLOYMENT_CHECKLIST.md` - Interactive checklist
 - `README_DEPLOYMENT.md` - Visual overview
 
-### Platform Documentation:
-- Vercel: https://vercel.com/docs
-- Railway: https://docs.railway.app
+### Vercel Documentation:
+- Getting Started: https://vercel.com/docs
+- Environment Variables: https://vercel.com/docs/concepts/projects/environment-variables
+- Serverless Functions: https://vercel.com/docs/concepts/functions/serverless-functions
+- Python Runtime: https://vercel.com/docs/concepts/functions/serverless-functions/runtimes/python
+- Troubleshooting: https://vercel.com/docs/concepts/troubleshooting
 
-### Common Commands:
+### Common Vercel CLI Commands:
 ```bash
 # Check deployment status
 vercel ls
 
-# View logs
-vercel logs <your-url>
+# View logs for a deployment
+vercel logs <deployment-url>
 
-# Check env variables
+# Check environment variables
 vercel env ls
 
-# Pull env variables locally
+# Pull environment variables to local
+vercel env pull
+
+# Remove a deployment
+vercel rm <deployment-name>
+
+# Check which project you're in
+vercel inspect
+
+# Link local folder to Vercel project
+vercel link
+```
 vercel env pull
 ```
 

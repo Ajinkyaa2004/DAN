@@ -6,13 +6,20 @@ from typing import Optional, List
 import pandas as pd
 import io
 import json
+import os
 
 app = FastAPI(title="Business Compass Backend")
 
-# CORS configuration
+# CORS configuration - use environment variable in production
+cors_origins = os.getenv("CORS_ORIGINS", "*")
+if cors_origins != "*":
+    cors_origins = [origin.strip() for origin in cors_origins.split(",")]
+else:
+    cors_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
