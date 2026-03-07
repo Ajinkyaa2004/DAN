@@ -6,8 +6,17 @@ const app = express();
 const uploadRoutes = require('./routes/upload');
 const analysisRoutes = require('./routes/analysis');
 
+// CORS configuration - use environment variable in production
+const corsOrigins = process.env.CORS_ORIGINS 
+  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+  : '*';
+
+app.use(cors({
+  origin: corsOrigins,
+  credentials: true
+}));
+
 // Basic middleware
-app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Increase payload limit for large datasets
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 

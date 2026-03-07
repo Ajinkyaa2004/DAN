@@ -19,8 +19,15 @@ const upload = multer({
   },
 });
 
-// CORS configuration - allow all origins for development
-app.use(cors());
+// CORS configuration - use environment variable in production
+const corsOrigins = process.env.CORS_ORIGINS 
+  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+  : '*';
+
+app.use(cors({
+  origin: corsOrigins,
+  credentials: true
+}));
 app.use(express.json());
 
 // Health check
