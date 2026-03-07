@@ -18,7 +18,7 @@ import './App.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 const BUSINESS_COMPASS_URL = process.env.REACT_APP_BUSINESS_COMPASS_URL || 'http://localhost:3000';
-const SALES_ANALYSIS_URL = process.env.REACT_APP_SALES_ANALYSIS_URL || 'http://localhost:3002';
+const SALES_ANALYSIS_URL = process.env.REACT_APP_SALES_ANALYSIS_URL || 'http://localhost:3001';
 
 function App() {
   const [uploadMode, setUploadMode] = useState('combined'); // 'combined' or 'separate'
