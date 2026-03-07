@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head><title>Clear Storage</title></head>
+<body>
+<h1>Clearing Browser Storage...</h1>
+<script>
+  sessionStorage.clear();
+  localStorage.clear();
+  indexedDB.deleteDatabase('DansSalesAnalysis');
+  alert('Storage cleared! Close this tab and refresh your dashboard.');
+</script>
+</body>
+</html>

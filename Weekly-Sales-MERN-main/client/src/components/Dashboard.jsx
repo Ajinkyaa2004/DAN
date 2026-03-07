@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import HistoricalAnalysis from './HistoricalAnalysis';
 import MonthlySales from './MonthlySales';
+import OverviewWeeklySales from './OverviewWeeklySales';
 import CustomerTrends from './CustomerTrends';
 import CustomerDetail from './CustomerDetail';
 import MetricCards from './MetricCards';
@@ -32,6 +33,11 @@ function Dashboard({
     if (!rawData) return [];
     
     return rawData.filter(row => {
+      // Exclude 'UNKNOWN' branch globally
+      if (row.Branch && row.Branch.toUpperCase() === 'UNKNOWN') {
+        return false;
+      }
+
       // Branch filter
       if (selectedBranches.length > 0 && !selectedBranches.includes(row.Branch)) {
         return false;
@@ -66,6 +72,11 @@ function Dashboard({
     if (!historicalData) return [];
     
     return historicalData.filter(row => {
+      // Exclude 'UNKNOWN' branch globally
+      if (row.Branch && row.Branch.toUpperCase() === 'UNKNOWN') {
+        return false;
+      }
+
       // Branch filter
       if (selectedBranches.length > 0 && !selectedBranches.includes(row.Branch)) {
         return false;
@@ -168,7 +179,9 @@ function Dashboard({
               filteredData={filteredData}
               historicalData={filteredHistoricalData}
             />
-            <AnnualPerformance historicalData={filteredHistoricalData} />
+            <AnnualPerformance historicalData={filteredHistoricalData} selectedBranches={selectedBranches} />
+            <MonthlySales filteredData={filteredData} selectedBranches={selectedBranches} />
+            <OverviewWeeklySales historicalData={filteredHistoricalData} selectedBranches={selectedBranches} />
             <GrowthHeatmap historicalData={filteredHistoricalData} />
             <BranchPerformance historicalData={filteredHistoricalData} />
           </div>
@@ -177,7 +190,7 @@ function Dashboard({
         {/* Quarter Analysis Tab */}
         {activeTab === 'quarter' && (
           <div className="tab-panel">
-            <QuarterAnalysis historicalData={filteredHistoricalData} />
+            <QuarterAnalysis historicalData={filteredHistoricalData} selectedBranches={selectedBranches} />
           </div>
         )}
 

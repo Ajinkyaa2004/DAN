@@ -858,7 +858,8 @@ export async function transformData(
 
   data.forEach(row => {
     const revenue = cleanNumericValue(row[revenueCol]);
-    if (revenue <= 0) return; // Skip invalid/empty rows
+    // Include negative values (credit notes/refunds) but skip NaN/zero
+    if (revenue === 0 || isNaN(revenue)) return; // Skip only zero and invalid rows
     
     let segment = 'Default';
     
@@ -913,7 +914,7 @@ export async function transformData(
       const customerName = customerNameCol ? String(row[customerNameCol]).trim() : customerId;
       const revenue = cleanNumericValue(row[revenueCol]);
       
-      if (revenue > 0) {
+      if (revenue !== 0 && !isNaN(revenue)) { // Include negatives (credits/refunds)
         const current = customerMap.get(customerId);
         const currentRevenue = current?.revenue || 0;
         // Apply floating point rounding fix
@@ -968,7 +969,7 @@ export async function transformData(
     data.forEach((row, index) => {
       const dateStr = String(row[dateCol]);
       const revenue = cleanNumericValue(row[revenueCol]);
-      if (revenue > 0) {
+      if (revenue !== 0 && !isNaN(revenue)) { // Include negatives (credits/refunds)
         const fy = getFYFromDate(dateStr);
         revenueByFyMap.set(fy, (revenueByFyMap.get(fy) || 0) + revenue);
         
@@ -1158,7 +1159,7 @@ export async function transformData(
     data.forEach(row => {
       const dateStr = String(row[dateCol]);
       const revenue = cleanNumericValue(row[revenueCol]);
-      if (revenue <= 0) return;
+      if (revenue === 0 || isNaN(revenue)) return; // Include negatives (credits/refunds)
       
       const date = parseFlexibleDate(dateStr);
       if (!date) return;
@@ -1308,7 +1309,7 @@ export async function transformData(
         }
         
         const revenue = cleanNumericValue(row[revenueCol]);
-        if (revenue <= 0) return; // Skip zero/negative revenue
+        if (revenue === 0 || isNaN(revenue)) return; // Include negatives (credits/refunds)
         
         const dateStr = String(row[dateCol]);
         const date = parseFlexibleDate(dateStr);
@@ -1442,7 +1443,10 @@ export async function transformData(
     })(),
 
     customerPurchases: data
-      .filter(row => cleanNumericValue(row[revenueCol]) > 0)
+      .filter(row => {
+        const rev = cleanNumericValue(row[revenueCol]);
+        return rev !== 0 && !isNaN(rev);
+      })
       .slice(0, 20)
       .map((row, idx) => {
         const customerId = customerCol ? String(row[customerCol]).trim() : `Customer ${idx + 1}`;
@@ -1788,7 +1792,7 @@ export async function transformMultiBranchData(
     for (const row of data) {
       const revenue = cleanNumericValue(row[revenueCol]);
       
-      if (revenue <= 0) {
+      if (revenue === 0 || isNaN(revenue)) {
         branchRowCounts[branch].invalid++;
         invalidRevenueCount++;
         continue; // Skip invalid rows
@@ -1875,77 +1879,77 @@ export async function transformMultiBranchData(
       
       // Check for duplicate Invoice ID within the same branch
       // For duplicates, keep the row with most recent date or lowest outstanding
+      // IMPORTANT: Always keep negative values (credit notes) even if invoice ID is duplicate
       if (invoiceCol) {
         const invoiceId = String(row[invoiceCol]).trim();
         if (invoiceId) {
-          // Initialize branch-specific invoice map if needed
-          if (!invoiceRowsByBranch.has(finalBranchValue)) {
-            invoiceRowsByBranch.set(finalBranchValue, new Map<string, ParsedRow>());
-          }
-          
-          const branchInvoices = invoiceRowsByBranch.get(finalBranchValue)!;
-          
-          // Check if invoice already exists IN THIS BRANCH
-          if (branchInvoices.has(invoiceId)) {
-            duplicateCount++;
-            
-            // Get existing row for comparison
-            const existingRow = branchInvoices.get(invoiceId)!;
-            
-            // Determine which row to keep (prefer EARLIEST date for consistency with separate CSVs)
-            let keepNewRow = false;
-            
-            // Strategy 1: If date column exists, keep the row with EARLIEST date
-            if (dateCol) {
-              const existingDate = parseFlexibleDate(String(existingRow[dateCol]));
-              const newDate = parseFlexibleDate(String(row[dateCol]));
-              
-              if (newDate && existingDate && newDate < existingDate) {
-                keepNewRow = true;
-                if (duplicateLogCount < 5) {
-                  console.log(`  📅 Invoice ${invoiceId}: Keeping EARLIER row (${String(row[dateCol])} vs ${String(existingRow[dateCol])})`);
-                  duplicateLogCount++;
-                }
-              }
-            }
-            
-            // Strategy 2: Fallback - if dates are equal or missing, prefer higher revenue amount
-            // This handles cases where the same invoice ID has different amounts
-            if (!keepNewRow && revenueCol) {
-              const existingRevenue = cleanNumericValue(existingRow[revenueCol]);
-              const newRevenue = cleanNumericValue(row[revenueCol]);
-              
-              if (newRevenue > existingRevenue) {
-                keepNewRow = true;
-                duplicateReplacedCount++;
-                if (duplicateLogCount < 5) {
-                  console.log(`  💰 Invoice ${invoiceId}: Keeping row with higher revenue ($${newRevenue} vs $${existingRevenue})`);
-                  duplicateLogCount++;
-                }
-              }
-            }
-            
-            // If we're keeping the new row, update the map
-            if (keepNewRow) {
-              // Remove existing row from combinedData
-              const existingIndex = combinedData.findIndex(r => 
-                r[invoiceCol] === invoiceId && r.branch === finalBranchValue
-              );
-              if (existingIndex !== -1) {
-                combinedData.splice(existingIndex, 1);
-                branchRowCounts[branch].valid--; // Adjust count
-                branchRevenueRunning[branch] -= cleanNumericValue(existingRow[revenueCol]);
-              }
-              
-              // Update map with new row
-              branchInvoices.set(invoiceId, { ...row, branch: finalBranchValue });
-            } else {
-              // Skip this duplicate row
-              continue;
-            }
+          // If this is a negative value (credit note/refund), always keep it regardless of duplicate invoice ID
+          if (revenue < 0) {
+            // Credit notes/refunds should always be included, even if they share an invoice ID
+            // Don't check for duplicates - just add to combinedData
+            // (will be added at the end of this iteration)
           } else {
-            // First time seeing this invoice - add to map
-            branchInvoices.set(invoiceId, { ...row, branch: finalBranchValue });
+            // For positive values, apply normal duplicate detection
+            // Initialize branch-specific invoice map if needed
+            if (!invoiceRowsByBranch.has(finalBranchValue)) {
+              invoiceRowsByBranch.set(finalBranchValue, new Map<string, ParsedRow>());
+            }
+            
+            const branchInvoices = invoiceRowsByBranch.get(finalBranchValue)!;
+            
+            // Check if invoice already exists IN THIS BRANCH
+            if (branchInvoices.has(invoiceId)) {
+              duplicateCount++;
+              
+              // Get existing row for comparison
+              const existingRow = branchInvoices.get(invoiceId)!;
+              
+              // Determine which row to keep (prefer EARLIEST date for consistency with separate CSVs)
+              let keepNewRow = false;
+              
+              // Strategy 1: If date column exists, keep the row with EARLIEST date
+              if (dateCol) {
+                const existingDate = parseFlexibleDate(String(existingRow[dateCol]));
+                const newDate = parseFlexibleDate(String(row[dateCol]));
+                
+                if (newDate && existingDate && newDate < existingDate) {
+                  keepNewRow = true;
+                  if (duplicateLogCount < 5) {
+                    console.log(`  📅 Invoice ${invoiceId}: Keeping EARLIER row (${String(row[dateCol])} vs ${String(existingRow[dateCol])})`);
+                    duplicateLogCount++;
+                  }
+                }
+              }
+              
+              // Strategy 2: Fallback - if dates are equal or missing, prefer higher revenue amount
+              // This handles cases where the same invoice ID has different amounts
+              if (!keepNewRow && revenueCol) {
+                const existingRevenue = cleanNumericValue(existingRow[revenueCol]);
+                const newRevenue = cleanNumericValue(row[revenueCol]);
+                
+                if (newRevenue > existingRevenue) {
+                  keepNewRow = true;
+                  duplicateReplacedCount++;
+                  if (duplicateLogCount < 5) {
+                    console.log(`  💰 Invoice ${invoiceId}: Keeping row with higher revenue ($${newRevenue} vs $${existingRevenue})`);
+                    duplicateLogCount++;
+                  }
+                }
+              }
+              
+              // If we're keeping the new row, update the map
+              if (keepNewRow) {
+                // Update map with new row (but we do NOT remove the existing row from combinedData 
+                // anymore, so that all rows are summed exactly like the raw CSV)
+                branchInvoices.set(invoiceId, { ...row, branch: finalBranchValue });
+              } else {
+                // We no longer skip duplicate rows, we include everything
+                // to match Weekly Sales's simple SUM approach.
+              }
+            } else {
+              // First time seeing this invoice - add to map
+              branchInvoices.set(invoiceId, { ...row, branch: finalBranchValue });
+            }
           }
         }
       }
@@ -2024,7 +2028,7 @@ export async function transformMultiBranchData(
   
   combinedData.forEach((row, index) => {
     const revenue = cleanNumericValue(row[revenueCol]);
-    if (revenue > 0) {
+    if (revenue !== 0 && !isNaN(revenue)) {
       totalRevenue += revenue;
       rowsIncluded++;
     } else {
@@ -2148,7 +2152,7 @@ export async function transformMultiBranchData(
       const customerName = customerNameCol ? String(row[customerNameCol]).trim() : customerId;
       const revenue = cleanNumericValue(row[revenueCol]);
       
-      if (revenue > 0) {
+      if (revenue !== 0 && !isNaN(revenue)) {
         const current = customerMap.get(customerId);
         const currentRevenue = current?.revenue || 0;
         // Apply floating point rounding fix
@@ -2372,7 +2376,7 @@ export async function transformMultiBranchData(
       const date = String(row[dateCol]);
       const revenue = cleanNumericValue(row[revenueCol]);
       const branch = String(row.branch);
-      if (revenue > 0) {
+      if (revenue !== 0 && !isNaN(revenue)) {
         const key = `${date}-${branch}`;
         const existing = dateRevenueMap.get(key);
         if (existing) {
@@ -2417,7 +2421,7 @@ export async function transformMultiBranchData(
     combinedData.forEach(row => {
       const dateStr = String(row[dateCol]);
       const revenue = cleanNumericValue(row[revenueCol]);
-      if (revenue > 0) {
+      if (revenue !== 0 && !isNaN(revenue)) {
         const fy = getFYFromDate(dateStr);
         revenueByFyMap.set(fy, (revenueByFyMap.get(fy) || 0) + revenue);
         
@@ -2497,7 +2501,7 @@ export async function transformMultiBranchData(
       if (!date) return;
       
       const revenue = cleanNumericValue(row[revenueCol]);
-      if (revenue <= 0) return;
+      if (revenue === 0 || isNaN(revenue)) return;
       
       const branch = String(row.branch);
       const year = date.getFullYear();
@@ -2536,7 +2540,7 @@ export async function transformMultiBranchData(
       if (!date) return;
       
       const revenue = cleanNumericValue(row[revenueCol]);
-      if (revenue <= 0) return;
+      if (revenue === 0 || isNaN(revenue)) return;
       
       const branch = String(row.branch);
       const year = date.getFullYear();
@@ -2569,7 +2573,7 @@ export async function transformMultiBranchData(
       if (!date) return;
       
       const revenue = cleanNumericValue(row[revenueCol]);
-      if (revenue <= 0) return;
+      if (revenue === 0 || isNaN(revenue)) return;
       
       const branch = String(row.branch);
       const year = date.getFullYear();
@@ -2608,7 +2612,7 @@ export async function transformMultiBranchData(
     combinedData.forEach(row => {
       const dateStr = String(row[dateCol]);
       const revenue = cleanNumericValue(row[revenueCol]);
-      if (revenue <= 0) return;
+      if (revenue === 0 || isNaN(revenue)) return;
       
       const date = parseFlexibleDate(dateStr);
       if (!date) return;

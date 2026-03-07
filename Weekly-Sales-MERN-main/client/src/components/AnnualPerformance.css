@@ -106,11 +106,19 @@
   font-family: 'Monaco', 'Courier New', monospace;
 }
 
+.amount-header {
+  text-align: right !important;
+}
+
 .total-cell {
   text-align: right;
   font-weight: 700;
   color: #2196f3;
   font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.total-header {
+  text-align: right !important;
 }
 
 .performance-chart-container {

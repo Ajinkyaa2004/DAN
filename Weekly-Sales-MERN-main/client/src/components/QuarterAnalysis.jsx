@@ -4,7 +4,7 @@ import Plot from 'react-plotly.js';
 import { Calendar, BarChart3, ChevronDown, List as ListIcon, TrendingUp } from 'lucide-react';
 import './QuarterAnalysis.css';
 
-function QuarterAnalysis({ historicalData }) {
+function QuarterAnalysis({ historicalData, selectedBranches = [] }) {
   const [selectedQuarters, setSelectedQuarters] = useState([]);
 
   // Calculate quarter from week number
@@ -14,6 +14,22 @@ function QuarterAnalysis({ historicalData }) {
     if (week <= 39) return 'Q3';
     return 'Q4';
   };
+
+  // Determine displayed branches
+  const displayBranches = useMemo(() => {
+    if (selectedBranches && selectedBranches.length > 0) {
+      return selectedBranches;
+    }
+    const branches = new Set();
+    if (historicalData) {
+      historicalData.forEach(row => {
+        if (row.Branch && row.Branch.toUpperCase() !== 'UNKNOWN') {
+          branches.add(row.Branch);
+        }
+      });
+    }
+    return Array.from(branches).sort();
+  }, [selectedBranches, historicalData]);
 
   // Generate quarter summary table data
   const quarterSummary = useMemo(() => {
@@ -29,16 +45,16 @@ function QuarterAnalysis({ historicalData }) {
         quarterMap[key] = {
           financialYear: row.FinancialYear,
           quarter: quarter,
-          NSW: 0,
-          QLD: 0,
-          WA: 0,
           total: 0
         };
+        displayBranches.forEach(b => quarterMap[key][b] = 0);
       }
 
-      const total = parseFloat(row.Total) || 0;
-      quarterMap[key][row.Branch] = (quarterMap[key][row.Branch] || 0) + total;
-      quarterMap[key].total += total;
+      if (displayBranches.includes(row.Branch)) {
+        const total = parseFloat(row.Total) || 0;
+        quarterMap[key][row.Branch] = (quarterMap[key][row.Branch] || 0) + total;
+        quarterMap[key].total += total;
+      }
     });
 
     return Object.values(quarterMap).sort((a, b) => {
@@ -55,30 +71,24 @@ function QuarterAnalysis({ historicalData }) {
 
     const quarters = quarterSummary.map(q => `${q.financialYear}\n${q.quarter}`);
     
-    return [
-      {
+    const colorMap = {
+       'WA': '#6366f1',
+       'NSW': '#2563eb',
+       'QLD': '#0ea5e9'
+    };
+    const defaultColors = ['#e11d48', '#10b981', '#f59e0b', '#8b5cf6'];
+
+    return displayBranches.map((branch, index) => {
+      const color = colorMap[branch] || defaultColors[index % defaultColors.length];
+      return {
         x: quarters,
-        y: quarterSummary.map(q => q.WA || 0),
-        name: 'WA',
+        y: quarterSummary.map(q => q[branch] || 0),
+        name: branch,
         type: 'bar',
-        marker: { color: '#6366f1', line: { width: 0 } }
-      },
-      {
-        x: quarters,
-        y: quarterSummary.map(q => q.NSW || 0),
-        name: 'NSW',
-        type: 'bar',
-        marker: { color: '#2563eb', line: { width: 0 } }
-      },
-      {
-        x: quarters,
-        y: quarterSummary.map(q => q.QLD || 0),
-        name: 'QLD',
-        type: 'bar',
-        marker: { color: '#0ea5e9', line: { width: 0 } }
-      }
-    ];
-  }, [quarterSummary]);
+        marker: { color, line: { width: 0 } }
+      };
+    });
+  }, [quarterSummary, displayBranches]);
 
   // Quarter options for selector
   const quarterOptions = useMemo(() => {
@@ -169,9 +179,9 @@ function QuarterAnalysis({ historicalData }) {
                 <th>#</th>
                 <th>Financial Year</th>
                 <th>Quarter</th>
-                <th>NSW</th>
-                <th>QLD</th>
-                <th>WA</th>
+                {displayBranches.map(branch => (
+                  <th key={branch}>{branch}</th>
+                ))}
                 <th>Total</th>
               </tr>
             </thead>
@@ -181,9 +191,9 @@ function QuarterAnalysis({ historicalData }) {
                   <td>{idx + 1}</td>
                   <td>{row.financialYear}</td>
                   <td>{row.quarter}</td>
-                  <td>{formatCurrency(row.NSW || 0)}</td>
-                  <td>{formatCurrency(row.QLD || 0)}</td>
-                  <td>{formatCurrency(row.WA || 0)}</td>
+                  {displayBranches.map(branch => (
+                    <td key={branch}>{formatCurrency(row[branch] || 0)}</td>
+                  ))}
                   <td className="total-cell">{formatCurrency(row.total)}</td>
                 </tr>
               ))}

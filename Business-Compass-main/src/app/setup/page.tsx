@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +28,7 @@ interface BranchFile {
   required: boolean;
 }
 
-export default function SetupPage() {
+function SetupPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -691,5 +691,33 @@ export default function SetupPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function SetupPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh',
+        background: '#ffffff'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '4px solid #e5e7eb',
+            borderTop: '4px solid #3b82f6',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto'
+          }}></div>
+        </div>
+      </div>
+    }>
+      <SetupPageContent />
+    </Suspense>
   );
 }

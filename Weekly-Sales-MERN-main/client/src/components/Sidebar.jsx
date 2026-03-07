@@ -4,7 +4,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import Configuration from './Configuration';
 import FileUpload from './FileUpload';
-import { ChevronRight, ChevronDown, BarChart3, X, AlertTriangle } from 'lucide-react';
+import { ChevronRight, ChevronDown, BarChart3, X, AlertTriangle, Database, CheckCircle } from 'lucide-react';
 import './Sidebar.css';
 
 function Sidebar({
@@ -37,6 +37,8 @@ function Sidebar({
   setSelectedFinancialYears
 }) {
   const [dataFiltersExpanded, setDataFiltersExpanded] = useState(true);
+
+  const isFromUnifiedDashboard = new URLSearchParams(window.location.search).has('sessionId');
 
   // Convert arrays to react-select format
   const branchOptions = uniqueBranches.map(b => ({ value: b, label: b }));
@@ -104,14 +106,58 @@ function Sidebar({
           onApply={handleConfigApply}
         />
 
-        {/* File Upload Section */}
-        <FileUpload
-          config={config}
-          setRawData={setRawData}
-          setHistoricalData={setHistoricalData}
-          detectedSheets={detectedSheets}
-          setDetectedSheets={setDetectedSheets}
-        />
+        {/* File Upload Section or Unified Info */}
+        {!isFromUnifiedDashboard ? (
+          <FileUpload
+            config={config}
+            setRawData={setRawData}
+            setHistoricalData={setHistoricalData}
+            detectedSheets={detectedSheets}
+            setDetectedSheets={setDetectedSheets}
+          />
+        ) : (
+          <div className="managed-data-card" style={{
+            margin: '16px',
+            padding: '20px',
+            borderRadius: '12px',
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#0f172a' }}>
+              <div style={{ padding: '8px', background: '#e0f2fe', borderRadius: '8px', color: '#0284c7' }}>
+                <Database size={20} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>Unified Data Source</h3>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>Managed by Portal</span>
+              </div>
+            </div>
+            
+            <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: '1.5' }}>
+              Your data has been successfully synchronized from the central upload portal.
+            </p>
+            
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              fontSize: '12px', 
+              color: '#059669', 
+              fontWeight: '500',
+              padding: '6px 10px',
+              background: '#d1fae5',
+              borderRadius: '6px',
+              width: 'fit-content'
+            }}>
+              <CheckCircle size={14} />
+              Active Connection
+            </div>
+          </div>
+        )}
 
         {/* Filters - Only show when data is loaded */}
         {rawData && (

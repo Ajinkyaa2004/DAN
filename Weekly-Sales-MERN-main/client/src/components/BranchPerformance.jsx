@@ -74,7 +74,7 @@ function BranchPerformance({ historicalData }) {
             },
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            margin: { l: 20, r: 20, t: 20, b: 60 },
+            margin: { l: 50, r: 50, t: 60, b: 60 },
             hovermode: 'closest',
             hoverlabel: {
               bgcolor: '#1e293b',

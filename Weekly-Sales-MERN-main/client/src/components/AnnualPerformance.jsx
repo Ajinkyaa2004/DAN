@@ -3,7 +3,42 @@ import Plot from 'react-plotly.js';
 import { BarChart3 } from 'lucide-react';
 import './AnnualPerformance.css';
 
-function AnnualPerformance({ historicalData }) {
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+};
+
+const formatShortCurrency = (value) => {
+  if (value >= 1000000) {
+    return `$${(value / 1000000).toFixed(2)}M`;
+  } else if (value >= 1000) {
+    return `$${(value / 1000).toFixed(2)}K`;
+  }
+  return formatCurrency(value);
+};
+
+function AnnualPerformance({ historicalData, selectedBranches = [] }) {
+  // Determine displayed branches
+  const displayBranches = useMemo(() => {
+    if (selectedBranches && selectedBranches.length > 0) {
+      return selectedBranches;
+    }
+    // Fallback: extract unique branches from data if nothing explicitly selected
+    const branches = new Set();
+    if (historicalData) {
+      historicalData.forEach(row => {
+         if (row.Branch && row.Branch.toUpperCase() !== 'UNKNOWN') {
+             branches.add(row.Branch);
+         }
+      });
+    }
+    return Array.from(branches).sort();
+  }, [selectedBranches, historicalData]);
+
   const tableData = useMemo(() => {
     if (!historicalData || historicalData.length === 0) return [];
 
@@ -16,10 +51,11 @@ function AnnualPerformance({ historicalData }) {
       const total = parseFloat(row.Total) || 0;
 
       if (!yearBranchMap[year]) {
-        yearBranchMap[year] = { NSW: 0, QLD: 0, WA: 0 };
+        yearBranchMap[year] = {};
+        displayBranches.forEach(b => yearBranchMap[year][b] = 0);
       }
 
-      if (yearBranchMap[year][branch] !== undefined) {
+      if (displayBranches.includes(branch) && yearBranchMap[year][branch] !== undefined) {
         yearBranchMap[year][branch] += total;
       }
     });
@@ -27,67 +63,51 @@ function AnnualPerformance({ historicalData }) {
     // Convert to array and sort by year
     const data = Object.keys(yearBranchMap)
       .sort()
-      .map(year => ({
-        year,
-        NSW: yearBranchMap[year].NSW,
-        QLD: yearBranchMap[year].QLD,
-        WA: yearBranchMap[year].WA,
-        total: yearBranchMap[year].NSW + yearBranchMap[year].QLD + yearBranchMap[year].WA
-      }));
+      .map(year => {
+        const yearItem = { year };
+        let total = 0;
+        displayBranches.forEach(b => {
+           yearItem[b] = yearBranchMap[year][b];
+           total += yearBranchMap[year][b];
+        });
+        yearItem.total = total;
+        return yearItem;
+      });
 
     return data;
-  }, [historicalData]);
+  }, [historicalData, displayBranches]);
 
   const chartData = useMemo(() => {
     if (tableData.length === 0) return [];
 
     const years = tableData.map(d => d.year);
-    const waData = tableData.map(d => d.WA);
-    const nswData = tableData.map(d => d.NSW);
-    const qldData = tableData.map(d => d.QLD);
+    
+    // Define a color map for known branches
+    const colorMap = {
+       'WA': '#6366f1',
+       'NSW': '#2563eb',
+       'QLD': '#0ea5e9'
+    };
+    const defaultColors = ['#e11d48', '#10b981', '#f59e0b', '#8b5cf6'];
 
-    return [
-      {
+    return displayBranches.map((branch, index) => {
+      const bData = tableData.map(d => d[branch] || 0);
+      const textData = bData.map(val => formatShortCurrency(val));
+      const color = colorMap[branch] || defaultColors[index % defaultColors.length];
+      return {
         x: years,
-        y: waData,
-        name: 'WA',
+        y: bData,
+        text: textData,
+        textposition: 'outside',
+        textfont: { size: 10, color: '#64748b' },
+        name: branch,
         type: 'bar',
-        marker: { color: '#6366f1', line: { width: 0 } }
-      },
-      {
-        x: years,
-        y: nswData,
-        name: 'NSW',
-        type: 'bar',
-        marker: { color: '#2563eb', line: { width: 0 } }
-      },
-      {
-        x: years,
-        y: qldData,
-        name: 'QLD',
-        type: 'bar',
-        marker: { color: '#0ea5e9', line: { width: 0 } }
-      }
-    ];
-  }, [tableData]);
+        marker: { color, line: { width: 0 } }
+      };
+    });
+  }, [tableData, displayBranches]);
 
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
-  };
 
-  const formatShortCurrency = (value) => {
-    if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(2)}M`;
-    } else if (value >= 1000) {
-      return `$${(value / 1000).toFixed(2)}K`;
-    }
-    return formatCurrency(value);
-  };
 
   if (!historicalData || historicalData.length === 0) {
     return (
@@ -111,10 +131,10 @@ function AnnualPerformance({ historicalData }) {
               <tr>
                 <th>#</th>
                 <th>Financial Year</th>
-                <th>NSW</th>
-                <th>QLD</th>
-                <th>WA</th>
-                <th>Total</th>
+                {displayBranches.map(branch => (
+                  <th key={branch} className="amount-header">{branch}</th>
+                ))}
+                <th className="total-header">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -122,9 +142,9 @@ function AnnualPerformance({ historicalData }) {
                 <tr key={row.year}>
                   <td>{index + 1}</td>
                   <td className="year-cell">{row.year}</td>
-                  <td className="amount-cell">{formatShortCurrency(row.NSW)}</td>
-                  <td className="amount-cell">{formatShortCurrency(row.QLD)}</td>
-                  <td className="amount-cell">{formatShortCurrency(row.WA)}</td>
+                  {displayBranches.map(branch => (
+                     <td key={branch} className="amount-cell">{formatShortCurrency(row[branch])}</td>
+                  ))}
                   <td className="total-cell">{formatShortCurrency(row.total)}</td>
                 </tr>
               ))}

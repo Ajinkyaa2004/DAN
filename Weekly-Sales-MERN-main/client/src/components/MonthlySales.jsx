@@ -1,49 +1,59 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useMemo } from 'react';
 import Plot from 'react-plotly.js';
-import LoadingSpinner from './LoadingSpinner';
+import { Calendar } from 'lucide-react';
 import './MonthlySales.css';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+function MonthlySales({ filteredData, selectedBranches }) {
+  // Compute monthly data fully on the frontend
+  const chartData = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) return [];
 
-function MonthlySales({ filteredData, selectedBranches, yearRange, dateRange }) {
-  const [monthlyData, setMonthlyData] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+    const branchesToUse = selectedBranches || [];
+    const monthlyMap = {};
 
-  useEffect(() => {
-    const fetchMonthlyData = async () => {
-      if (!filteredData || filteredData.length === 0) return;
+    filteredData.forEach(row => {
+      // Respect selected branches and ignore unknown
+      if (branchesToUse.length > 0 && !branchesToUse.includes(row.Branch)) return;
+      if (row.Branch && row.Branch.toUpperCase() === 'UNKNOWN') return;
 
-      setIsLoading(true);
-      try {
-        const response = await axios.post(`${API_BASE_URL}/api/analyze/monthly`, {
-          data: filteredData,
-          branches: selectedBranches,
-          yearRange: yearRange,
-          dateRange: dateRange
-        });
+      const date = new Date(row.IssueDate);
+      if (isNaN(date.getTime())) return;
 
-        setMonthlyData(response.data.monthly);
-      } catch (error) {
-        console.error('Error fetching monthly data:', error);
-      } finally {
-        setIsLoading(false);
+      const monthStr = date.toLocaleString('default', { month: 'short' });
+      const year = date.getFullYear();
+      const monthKey = `${monthStr} ${year}`;
+      const sortKey = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const branch = row.Branch;
+
+      const key = `${branch}_${sortKey}`;
+      if (!monthlyMap[key]) {
+        monthlyMap[key] = {
+          Branch: branch,
+          Month: monthKey,
+          sortKey: sortKey,
+          Total: 0
+        };
       }
+      monthlyMap[key].Total += parseFloat(row.Total) || 0;
+    });
+
+    const monthlyDataArray = Object.values(monthlyMap);
+    const uniqueBranches = [...new Set(monthlyDataArray.map(r => r.Branch))];
+
+    // Chart styling colors
+    const colorMap = {
+       'WA': '#6366f1',
+       'NSW': '#2563eb',
+       'QLD': '#0ea5e9'
     };
+    const defaultColors = ['#e11d48', '#10b981', '#f59e0b', '#8b5cf6'];
 
-    fetchMonthlyData();
-  }, [filteredData, selectedBranches, yearRange, dateRange]);
-
-  // Prepare data for Plotly
-  const chartData = React.useMemo(() => {
-    if (!monthlyData || monthlyData.length === 0) return [];
-
-    const branches = [...new Set(monthlyData.map(r => r.Branch))];
-    
-    return branches.map(branch => {
-      const branchData = monthlyData.filter(r => r.Branch === branch);
-      // Sort by month
-      branchData.sort((a, b) => a.Month.localeCompare(b.Month));
+    return uniqueBranches.map((branch, idx) => {
+      const branchData = monthlyDataArray.filter(r => r.Branch === branch);
+      // Sort by chronological month
+      branchData.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+      
+      const color = colorMap[branch] || defaultColors[idx % defaultColors.length];
       
       return {
         x: branchData.map(r => r.Month),
@@ -51,26 +61,17 @@ function MonthlySales({ filteredData, selectedBranches, yearRange, dateRange }) 
         type: 'scatter',
         mode: 'lines+markers',
         name: branch,
-        line: { width: 2 },
-        marker: { size: 8 },
+        line: { color, width: 2 },
+        marker: { size: 6 },
         hovertemplate: '%{x}<br>Sales: $%{y:,.2f}<extra></extra>'
       };
     });
-  }, [monthlyData]);
+  }, [filteredData, selectedBranches]);
 
-  if (isLoading) {
+  if (!filteredData || filteredData.length === 0) {
     return (
-      <div className="monthly-sales">
-        <h2 className="section-header">▸ Monthly Branch Sales</h2>
-        <LoadingSpinner message="Loading monthly sales data..." />
-      </div>
-    );
-  }
-
-  if (!monthlyData || monthlyData.length === 0) {
-    return (
-      <div className="monthly-sales">
-        <h2 className="section-header">▸ Monthly Branch Sales</h2>
+      <div className="monthly-sales" style={{ marginTop: '2rem' }}>
+        <h2 className="section-title"><Calendar size={22} style={{marginRight: '0.5rem', verticalAlign: 'middle'}}/> Monthly Branch Sales</h2>
         <div className="info-box">
           <p>No monthly sales data available for the selected filters.</p>
         </div>
@@ -79,31 +80,44 @@ function MonthlySales({ filteredData, selectedBranches, yearRange, dateRange }) 
   }
 
   return (
-    <div className="monthly-sales">
-      <h2 className="section-header">▸ Monthly Branch Sales</h2>
+    <div className="monthly-sales" style={{ marginTop: '2rem' }}>
+      <h2 className="section-title"><Calendar size={22} style={{marginRight: '0.5rem', verticalAlign: 'middle'}}/> Monthly Branch Sales</h2>
       
-      <div className="chart-container">
+      <div className="chart-container" style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+        <h3 className="subsection-title" style={{ fontSize: '1rem', color: '#1e293b', marginBottom: '1rem' }}>Monthly Sales by Branch</h3>
         <Plot
           data={chartData}
           layout={{
-            title: 'Monthly Sales by Branch',
+            font: { family: 'Inter, sans-serif', color: '#64748b' },
             xaxis: {
               title: 'Month',
-              type: 'category'
+              type: 'category',
+              showgrid: false,
+              tickfont: { color: '#94a3b8' }
             },
             yaxis: {
-              title: 'Sales'
+              title: 'Total Sales',
+              showgrid: true,
+              gridcolor: '#e2e8f0',
+              zeroline: false,
+              tickfont: { color: '#94a3b8' }
             },
             hovermode: 'x unified',
             showlegend: true,
             legend: {
               orientation: 'h',
-              y: -0.2
+              x: 0.5,
+              y: 1.15,
+              xanchor: 'center',
+              font: { color: '#475569', size: 11 }
             },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            margin: { l: 60, r: 20, t: 30, b: 60 },
             autosize: true
           }}
-          config={{ responsive: true }}
-          style={{ width: '100%', height: '500px' }}
+          config={{ responsive: true, displayModeBar: false }}
+          style={{ width: '100%', height: '400px' }}
         />
       </div>
     </div>

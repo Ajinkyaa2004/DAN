@@ -40,14 +40,37 @@ function parseDateDayFirst(value) {
     if (!Number.isNaN(date.getTime())) return date;
   }
 
-  // Handle common formats like DD/MM/YYYY or D/M/YYYY
+  // Handle common formats like DD/MM/YYYY or D/M/YYYY or YYYY-MM-DD
   const str = String(value).trim();
   const parts = str.split(/[\/\-]/);
+  
   if (parts.length === 3) {
-    const [day, month, year] = parts.map((p) => parseInt(p, 10));
-    if (!Number.isNaN(day) && !Number.isNaN(month) && !Number.isNaN(year)) {
+    let [p1, p2, p3] = parts.map((p) => parseInt(p, 10));
+    if (!Number.isNaN(p1) && !Number.isNaN(p2) && !Number.isNaN(p3)) {
+      let year, month, day;
+      
+      // If first part is a 4-digit year, assume YYYY-MM-DD
+      if (p1 > 1000) {
+        year = p1;
+        month = p2;
+        day = p3;
+      } else {
+        // Otherwise assume DD-MM-YYYY
+        day = p1;
+        month = p2;
+        year = p3;
+      }
+      
+      // Handle 2-digit years
+      if (year < 100) {
+        year += 2000;
+      }
+      
       const date = new Date(year, month - 1, day);
-      if (!Number.isNaN(date.getTime())) return date;
+      // Ensure the JS Date object didn't wrap around the month/day
+      if (!Number.isNaN(date.getTime()) && date.getDate() === day && date.getMonth() === month - 1) {
+        return date;
+      }
     }
   }
 

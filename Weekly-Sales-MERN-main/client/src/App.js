@@ -47,7 +47,11 @@ function App() {
   // === Derived Data (for filters) ===
   const uniqueBranches = useMemo(() => {
     if (!rawData) return [];
-    const branches = new Set(rawData.map(row => row.Branch).filter(Boolean));
+    const branches = new Set(
+      rawData
+        .map(row => row.Branch)
+        .filter(b => b && b.toString().toUpperCase() !== 'UNKNOWN')
+    );
     return Array.from(branches).sort();
   }, [rawData]);
 
