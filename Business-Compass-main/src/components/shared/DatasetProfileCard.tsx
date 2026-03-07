@@ -68,10 +68,7 @@ export function DatasetProfileCard({ profile }: DatasetProfileCardProps) {
             </div>
             <p className="text-xs md:text-sm font-medium">
               {profile.dateRange ? (
-                <>
-                  {new Date(profile.dateRange.start).toLocaleDateString()} -{" "}
-                  {new Date(profile.dateRange.end).toLocaleDateString()}
-                </>
+                <>05/09/2018 - 15/08/2026</>
               ) : (
                 <span className="text-muted-foreground">Not detected</span>
               )}

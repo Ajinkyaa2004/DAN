@@ -84,11 +84,11 @@ function AnnualPerformance({ historicalData, selectedBranches = [] }) {
     
     // Define a color map for known branches
     const colorMap = {
-       'WA': '#6366f1',
-       'NSW': '#2563eb',
-       'QLD': '#0ea5e9'
+       'WA': '#3b82f6',
+       'NSW': '#8b5cf6',
+       'QLD': '#f59e0b'
     };
-    const defaultColors = ['#e11d48', '#10b981', '#f59e0b', '#8b5cf6'];
+    const defaultColors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#22c55e', '#06b6d4', '#ec4899'];
 
     return displayBranches.map((branch, index) => {
       const bData = tableData.map(d => d[branch] || 0);

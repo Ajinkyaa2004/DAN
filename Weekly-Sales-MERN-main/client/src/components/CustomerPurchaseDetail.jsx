@@ -63,7 +63,7 @@ function CustomerPurchaseDetail({ filteredData }) {
   const yearwiseData = useMemo(() => {
     if (customerData.length === 0) return [];
 
-    const defaultColors = ['#2563eb', '#6366f1', '#0ea5e9', '#e11d48', '#10b981', '#f59e0b', '#8b5cf6'];
+    const defaultColors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#22c55e', '#06b6d4', '#ec4899'];
     const allCustomerNames = [...new Set(customerData.map(r => r.Customer))];
 
     return allCustomerNames.map((customerName, idx) => {
@@ -93,7 +93,7 @@ function CustomerPurchaseDetail({ filteredData }) {
   const monthlyTrendData = useMemo(() => {
     if (customerData.length === 0) return [];
 
-    const defaultColors = ['#6366f1', '#2563eb', '#0ea5e9', '#e11d48', '#10b981', '#f59e0b', '#8b5cf6'];
+    const defaultColors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#22c55e', '#06b6d4', '#ec4899'];
     const allCustomerNames = [...new Set(customerData.map(r => r.Customer))];
 
     return allCustomerNames.map((customerName, idx) => {

@@ -108,10 +108,12 @@ function extractBranchCode(branchValue: string): string {
   // Pattern 4: If it's a base company name without any state identifier,
   // return as-is (will be handled by context - typically head office/WA)
   // But first check if it's a known "no code" pattern
+  if (lowerValue === 'connect resources pty ltd') {
+    return 'WA';
+  }
   if (lowerValue.includes('pty') || lowerValue.includes('ltd') || lowerValue.includes('limited')) {
-    // This is a company name without explicit state - return original
-    // The calling code will need to handle this contextually
-    return trimmed;
+    // This is a company name without explicit state - return 'WA' as requested
+    return 'WA';
   }
   
   // Default: return original value
@@ -1494,10 +1496,42 @@ export async function transformData(
     dataGaps: [],
 
     meta: {
-      dataRange: { 
-        start: dateCol && data[0] ? String(data[0][dateCol]) : new Date().toISOString().split('T')[0],
-        end: dateCol && data[data.length - 1] ? String(data[data.length - 1][dateCol]) : new Date().toISOString().split('T')[0],
-      },
+      dataRange: (() => {
+        if (!dateCol) {
+          return {
+            start: new Date().toISOString().split('T')[0],
+            end: new Date().toISOString().split('T')[0],
+          };
+        }
+        
+        let minTime = Infinity;
+        let maxTime = -Infinity;
+        let foundDate = false;
+        
+        for (const row of data) {
+          const raw = row[dateCol];
+          if (!raw) continue;
+          const parsed = parseFlexibleDate(String(raw));
+          if (parsed && !isNaN(parsed.getTime())) {
+            const time = parsed.getTime();
+            if (time < minTime) minTime = time;
+            if (time > maxTime) maxTime = time;
+            foundDate = true;
+          }
+        }
+        
+        if (!foundDate) {
+          return {
+            start: data[0] && data[0][dateCol] ? String(data[0][dateCol]) : new Date().toISOString().split('T')[0],
+            end: data[data.length - 1] && data[data.length - 1][dateCol] ? String(data[data.length - 1][dateCol]) : new Date().toISOString().split('T')[0],
+          };
+        }
+        
+        return {
+          start: new Date(minTime).toISOString(),
+          end: new Date(maxTime).toISOString(),
+        };
+      })(),
       totalInvoices: data.length,
       totalCustomers: customerMap.size,
       branches: segments.map(s => s.name),
@@ -2967,10 +3001,43 @@ export async function transformMultiBranchData(
     dataGaps: [],
 
     meta: {
-      dataRange: { 
-        start: dateCol && combinedData[0] ? String(combinedData[0][dateCol]) : new Date().toISOString().split('T')[0],
-        end: dateCol && combinedData[combinedData.length - 1] ? String(combinedData[combinedData.length - 1][dateCol]) : new Date().toISOString().split('T')[0],
-      },
+      dataRange: (() => {
+        if (!dateCol) {
+          return {
+            start: new Date().toISOString().split('T')[0],
+            end: new Date().toISOString().split('T')[0],
+          };
+        }
+        
+        let minTime = Infinity;
+        let maxTime = -Infinity;
+        let foundDate = false;
+        
+        for (const row of combinedData) {
+          const raw = row[dateCol];
+          if (!raw) continue;
+          
+          const parsed = parseFlexibleDate(String(raw));
+          if (parsed && !isNaN(parsed.getTime())) {
+            const time = parsed.getTime();
+            if (time < minTime) minTime = time;
+            if (time > maxTime) maxTime = time;
+            foundDate = true;
+          }
+        }
+        
+        if (!foundDate) {
+          return {
+            start: combinedData[0] && combinedData[0][dateCol] ? String(combinedData[0][dateCol]) : new Date().toISOString().split('T')[0],
+            end: combinedData[combinedData.length - 1] && combinedData[combinedData.length - 1][dateCol] ? String(combinedData[combinedData.length - 1][dateCol]) : new Date().toISOString().split('T')[0],
+          };
+        }
+        
+        return {
+          start: new Date(minTime).toISOString(),
+          end: new Date(maxTime).toISOString(),
+        };
+      })(),
       totalInvoices: combinedData.length,
       totalCustomers: customerMap.size,
       branches: segments.map(s => s.name),

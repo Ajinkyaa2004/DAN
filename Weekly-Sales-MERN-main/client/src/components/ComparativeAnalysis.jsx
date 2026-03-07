@@ -76,7 +76,7 @@ function ComparativeAnalysis({ historicalData }) {
         name: firstYear.value,
         type: 'scatter',
         mode: 'lines+markers',
-        line: { color: '#2563eb', width: 2 },
+        line: { color: '#3b82f6', width: 2 },
         marker: { size: 5 }
       },
       {
@@ -85,7 +85,7 @@ function ComparativeAnalysis({ historicalData }) {
         name: secondYear.value,
         type: 'scatter',
         mode: 'lines+markers',
-        line: { color: '#6366f1', width: 2 },
+        line: { color: '#f59e0b', width: 2 },
         marker: { size: 5 }
       }
     ];

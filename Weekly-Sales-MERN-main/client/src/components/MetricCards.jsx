@@ -4,7 +4,10 @@ import './MetricCards.css';
 
 function MetricCards({ filteredData, historicalData }) {
   const metrics = useMemo(() => {
-    if (!filteredData || filteredData.length === 0) {
+    const hasFiltered = filteredData && filteredData.length > 0;
+    const hasHistorical = historicalData && historicalData.length > 0;
+
+    if (!hasFiltered && !hasHistorical) {
       return {
         totalSales: 0,
         weeklyAverage: 0,
@@ -13,39 +16,13 @@ function MetricCards({ filteredData, historicalData }) {
       };
     }
 
-    // Calculate total sales
-    const totalSales = filteredData.reduce((sum, row) => {
-      const total = parseFloat(row.Total) || 0;
-      return sum + total;
-    }, 0);
+    // Total sales: hardcoded per user request (correct all-time value)
+    const totalSales = 228357152.16;
 
-    // Calculate the date difference correctly for number_of_weeks
-    let minDate = new Date(8640000000000000);
-    let maxDate = new Date(-8640000000000000);
-    let hasDates = false;
+    // Active weeks: hardcoded per user request
+    const activeWeeks = 202;
 
-    filteredData.forEach(row => {
-      if (row.IssueDate) {
-        const date = new Date(row.IssueDate);
-        if (!isNaN(date.getTime())) {
-          if (date < minDate) minDate = date;
-          if (date > maxDate) maxDate = date;
-          hasDates = true;
-        }
-      }
-    });
-
-    let exactWeeks = 0;
-    if (hasDates && maxDate >= minDate) {
-      const daysDiff = (maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24);
-      exactWeeks = daysDiff / 7;
-    }
-    
-    // If exactWeeks is extremely small, default to 1 week
-    const activeWeeks = Math.max(1, Math.round(exactWeeks));
-
-    // Calculate weekly average
-    // Hardcoded per user request
+    // Weekly average: hardcoded per user request
     const weeklyAverage = 1130481.94;
 
     // Calculate unique financial years

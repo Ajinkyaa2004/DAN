@@ -177,7 +177,7 @@ function Dashboard({
           <div className="tab-panel">
             <MetricCards
               filteredData={filteredData}
-              historicalData={filteredHistoricalData}
+              historicalData={historicalData}
             />
             <AnnualPerformance historicalData={filteredHistoricalData} selectedBranches={selectedBranches} />
             <MonthlySales filteredData={filteredData} selectedBranches={selectedBranches} />

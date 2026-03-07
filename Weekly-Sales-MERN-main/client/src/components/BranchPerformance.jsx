@@ -26,9 +26,9 @@ function BranchPerformance({ historicalData }) {
     const percentages = values.map(val => ((val / total) * 100).toFixed(1));
 
     const colors = {
-      'WA': '#6366f1',
-      'NSW': '#2563eb',
-      'QLD': '#0ea5e9'
+      'WA': '#3b82f6',
+      'NSW': '#8b5cf6',
+      'QLD': '#f59e0b'
     };
 
     return {

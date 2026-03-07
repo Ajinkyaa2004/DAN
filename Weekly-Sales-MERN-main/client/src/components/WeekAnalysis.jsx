@@ -70,7 +70,7 @@ function WeekAnalysis({ historicalData }) {
       seriesData[key].data.push({ week: row.week, total: row.total });
     });
 
-    const colors = { WA: '#6366f1', NSW: '#2563eb', QLD: '#0ea5e9' };
+    const colors = { WA: '#3b82f6', NSW: '#8b5cf6', QLD: '#f59e0b' };
 
     return Object.keys(seriesData).map(key => {
       const series = seriesData[key];

@@ -163,7 +163,7 @@ function App() {
         setSessionId(response.data.sessionId);
         setUploadStatus({ 
           type: 'success', 
-          message: `Files uploaded successfully! Session ID: ${response.data.sessionId}` 
+          message: `Files uploaded successfully!`
         });
         
         // Store session ID in localStorage for easy access
