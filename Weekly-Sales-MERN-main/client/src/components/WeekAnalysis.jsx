@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import Select from 'react-select';
 import Plot from 'react-plotly.js';
-import { Calendar, FileText, TrendingUp } from 'lucide-react';
+import { Calendar, FileText, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import './WeekAnalysis.css';
 
 function WeekAnalysis({ historicalData }) {
   const [selectedWeeks, setSelectedWeeks] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Week options for selector (1-52)
   const weekOptions = useMemo(() => {
@@ -108,58 +110,7 @@ function WeekAnalysis({ historicalData }) {
     <div className="week-analysis">
       <h2 className="section-title"><Calendar size={22} />Week-wise Analysis</h2>
 
-      {/* Week Range Analysis Section */}
-      <div className="week-selector-section">
-        <h3 className="subsection-title"><Calendar size={18} />Week Range Analysis</h3>
-        <label>Select Specific Week(s) to Filter (Shows all by default)</label>
-        <Select
-          isMulti
-          options={weekOptions}
-          value={selectedWeeks}
-          onChange={setSelectedWeeks}
-          placeholder="All weeks shown - select to filter..."
-          className="react-select-container"
-          classNamePrefix="react-select"
-        />
-      </div>
-
-      {/* Detailed Sales - Always visible */}
-      <div className="detailed-sales-section">
-        <h3 className="subsection-title"><FileText size={18} />Detailed Sales {selectedWeeks.length > 0 ? 'for Selected Range' : '(All Weeks)'}</h3>
-        <div className="table-wrapper">
-          <table className="week-table">
-            <thead>
-              <tr>
-                <th>Branch</th>
-                <th>Financial Year</th>
-                <th>Week #</th>
-                <th>Total Sales</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredWeekData.slice(0, 10).map((row, idx) => (
-                <tr key={idx}>
-                  <td>{row.branch}</td>
-                  <td>{row.financialYear}</td>
-                  <td>{row.week}</td>
-                  <td className="amount-cell">{formatCurrency(row.total)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {filteredWeekData.length > 10 && (
-            <p className="table-note">Showing first 10 of {filteredWeekData.length} records</p>
-          )}
-        </div>
-
-        {/* Total Display */}
-        <div className="total-display">
-          <span className="total-label">Total Sales {selectedWeeks.length > 0 ? 'for Selected Range' : '(All Weeks)'}:</span>
-          <span className="total-value">{formatCurrency(selectedTotal)}</span>
-        </div>
-      </div>
-
-      {/* Sales Trend Chart */}
+      {/* Sales Trend Chart - FIRST */}
       <div className="sales-trend-section">
         <h3 className="subsection-title"><TrendingUp size={18} />Sales Trend {selectedWeeks.length > 0 ? 'for Selected Range' : '(All Weeks)'}</h3>
         <div className="chart-subtitle">Sales Trend by Week</div>
@@ -205,6 +156,78 @@ function WeekAnalysis({ historicalData }) {
           }}
           style={{ width: '100%', height: '420px' }}
         />
+      </div>
+
+      {/* Week Range Analysis Section - SECOND */}
+      <div className="week-selector-section">
+        <h3 className="subsection-title"><Calendar size={18} />Week Range Analysis</h3>
+        <label>Select Specific Week(s) to Filter (Shows all by default)</label>
+        <Select
+          isMulti
+          options={weekOptions}
+          value={selectedWeeks}
+          onChange={(val) => {
+            setSelectedWeeks(val);
+            setCurrentPage(1);
+          }}
+          placeholder="All weeks shown - select to filter..."
+          className="react-select-container"
+          classNamePrefix="react-select"
+        />
+      </div>
+
+      {/* Detailed Sales - THIRD */}
+      <div className="detailed-sales-section">
+        <h3 className="subsection-title"><FileText size={18} />Detailed Sales {selectedWeeks.length > 0 ? 'for Selected Range' : '(All Weeks)'}</h3>
+        <div className="table-wrapper">
+          <table className="week-table">
+            <thead>
+              <tr>
+                <th>Branch</th>
+                <th>Financial Year</th>
+                <th>Week #</th>
+                <th>Total Sales</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredWeekData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((row, idx) => (
+                <tr key={idx}>
+                  <td>{row.branch}</td>
+                  <td>{row.financialYear}</td>
+                  <td>{row.week}</td>
+                  <td className="amount-cell">{formatCurrency(row.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filteredWeekData.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', padding: '0.5rem', background: '#f8fafc', borderRadius: '8px' }}>
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.5rem 1rem', background: currentPage === 1 ? '#e2e8f0' : '#fff', color: currentPage === 1 ? '#94a3b8' : '#3b82f6', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 500, transition: 'all 0.2s', fontSize: '0.875rem' }}
+              >
+                <ChevronLeft size={16} /> Previous
+              </button>
+              <div style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 500 }}>
+                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredWeekData.length)} of {filteredWeekData.length} records (Page {currentPage} of {Math.ceil(filteredWeekData.length / itemsPerPage)})
+              </div>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredWeekData.length / itemsPerPage)))}
+                disabled={currentPage >= Math.ceil(filteredWeekData.length / itemsPerPage)}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.5rem 1rem', background: currentPage >= Math.ceil(filteredWeekData.length / itemsPerPage) ? '#e2e8f0' : '#fff', color: currentPage >= Math.ceil(filteredWeekData.length / itemsPerPage) ? '#94a3b8' : '#3b82f6', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: currentPage >= Math.ceil(filteredWeekData.length / itemsPerPage) ? 'not-allowed' : 'pointer', fontWeight: 500, transition: 'all 0.2s', fontSize: '0.875rem' }}
+              >
+                Next <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Total Display */}
+        <div className="total-display">
+          <span className="total-label">Total Sales {selectedWeeks.length > 0 ? 'for Selected Range' : '(All Weeks)'}:</span>
+          <span className="total-value">{formatCurrency(selectedTotal)}</span>
+        </div>
       </div>
     </div>
   );

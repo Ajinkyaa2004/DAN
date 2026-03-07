@@ -2,29 +2,30 @@ import React, { useState, useMemo } from 'react';
 import Select from 'react-select';
 import DatePicker from 'react-datepicker';
 import Plot from 'react-plotly.js';
-import { User, List as ListIcon, BarChart3, TrendingUp } from 'lucide-react';
+import { User, List as ListIcon, BarChart3, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import 'react-datepicker/dist/react-datepicker.css';
 import './CustomerPurchaseDetail.css';
 
 function CustomerPurchaseDetail({ filteredData }) {
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [selectedCustomers, setSelectedCustomers] = useState([]);
   const [dateRange, setDateRange] = useState([null, null]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  // Get unique customers
+  // Get unique customers from data
   const customerOptions = useMemo(() => {
     if (!filteredData || filteredData.length === 0) return [];
-
     const customers = [...new Set(filteredData.map(r => r.Customer))].filter(Boolean).sort();
     return customers.map(c => ({ value: c, label: c }));
   }, [filteredData]);
 
-  // Filter data by customer and date range
+  // Filter data by selected customers and date range
   const customerData = useMemo(() => {
-    if (!filteredData || !selectedCustomer) return [];
+    if (!filteredData || selectedCustomers.length === 0) return [];
 
-    let data = filteredData.filter(row => row.Customer === selectedCustomer.value);
+    const selectedNames = selectedCustomers.map(c => c.value);
+    let data = filteredData.filter(row => selectedNames.includes(row.Customer));
 
-    // Apply date range filter
     if (dateRange[0] && dateRange[1]) {
       data = data.filter(row => {
         const rowDate = new Date(row.IssueDate);
@@ -33,93 +34,93 @@ function CustomerPurchaseDetail({ filteredData }) {
     }
 
     return data;
-  }, [filteredData, selectedCustomer, dateRange]);
+  }, [filteredData, selectedCustomers, dateRange]);
 
-  // Filtered purchase records table
-  const purchaseRecords = useMemo(() => {
+  // Paginated purchase records
+  const allPurchaseRecords = useMemo(() => {
     if (customerData.length === 0) return [];
-
     return customerData.map(row => ({
       customerName: row.Customer,
       date: row.IssueDate,
       branch: row.Branch,
       invoice: row['Invoice #'],
       totalPurchase: parseFloat(row.Total) || 0
-    })).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+    })).sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [customerData]);
 
-  // Total for selected date range
+  const totalPages = Math.ceil(allPurchaseRecords.length / itemsPerPage);
+  const purchaseRecords = allPurchaseRecords.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Total
   const totalForRange = useMemo(() => {
     return customerData.reduce((sum, row) => sum + (parseFloat(row.Total) || 0), 0);
   }, [customerData]);
 
-  // Year-wise purchase totals
+  // Year-wise purchase totals — one trace per customer (array of traces)
   const yearwiseData = useMemo(() => {
     if (customerData.length === 0) return [];
 
-    const yearMap = {};
+    const defaultColors = ['#2563eb', '#6366f1', '#0ea5e9', '#e11d48', '#10b981', '#f59e0b', '#8b5cf6'];
+    const allCustomerNames = [...new Set(customerData.map(r => r.Customer))];
 
-    customerData.forEach(row => {
-      const date = new Date(row.IssueDate);
-      const year = date.getFullYear();
-      const total = parseFloat(row.Total) || 0;
-
-      if (!yearMap[year]) {
-        yearMap[year] = 0;
-      }
-      yearMap[year] += total;
+    return allCustomerNames.map((customerName, idx) => {
+      const color = defaultColors[idx % defaultColors.length];
+      const yearMap = {};
+      customerData
+        .filter(r => r.Customer === customerName)
+        .forEach(row => {
+          const year = String(new Date(row.IssueDate).getFullYear());
+          yearMap[year] = (yearMap[year] || 0) + (parseFloat(row.Total) || 0);
+        });
+      const years = Object.keys(yearMap).sort();
+      const values = years.map(y => yearMap[y]);
+      return {
+        x: years,
+        y: values,
+        name: customerName,
+        type: 'bar',
+        marker: { color, line: { width: 0 } },
+        text: values.map(v => `$${(v / 1000).toFixed(1)}K`),
+        textposition: 'outside'
+      };
     });
-
-    const years = Object.keys(yearMap).sort();
-    const values = years.map(y => yearMap[y]);
-
-    return {
-      x: years,
-      y: values,
-      type: 'bar',
-      marker: { color: '#2563eb', line: { width: 0 } },
-      text: values.map(v => `$${(v / 1000).toFixed(1)}K`),
-      textposition: 'outside'
-    };
   }, [customerData]);
 
-  // Monthly purchase trend
+  // Monthly purchase trend — one trace per customer (array of traces)
   const monthlyTrendData = useMemo(() => {
     if (customerData.length === 0) return [];
 
-    const monthMap = {};
+    const defaultColors = ['#6366f1', '#2563eb', '#0ea5e9', '#e11d48', '#10b981', '#f59e0b', '#8b5cf6'];
+    const allCustomerNames = [...new Set(customerData.map(r => r.Customer))];
 
-    customerData.forEach(row => {
-      const date = new Date(row.IssueDate);
-      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const total = parseFloat(row.Total) || 0;
-
-      if (!monthMap[monthYear]) {
-        monthMap[monthYear] = 0;
-      }
-      monthMap[monthYear] += total;
+    return allCustomerNames.map((customerName, idx) => {
+      const color = defaultColors[idx % defaultColors.length];
+      const monthMap = {};
+      customerData
+        .filter(r => r.Customer === customerName)
+        .forEach(row => {
+          const date = new Date(row.IssueDate);
+          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          monthMap[key] = (monthMap[key] || 0) + (parseFloat(row.Total) || 0);
+        });
+      const months = Object.keys(monthMap).sort();
+      return {
+        x: months,
+        y: months.map(m => monthMap[m]),
+        name: customerName,
+        type: 'scatter',
+        mode: 'lines+markers',
+        line: { color, width: 2 },
+        marker: { size: 5 }
+      };
     });
-
-    const months = Object.keys(monthMap).sort();
-    const values = months.map(m => monthMap[m]);
-
-    return {
-      x: months,
-      y: values,
-      type: 'scatter',
-      mode: 'lines+markers',
-      line: { color: '#6366f1', width: 2 },
-      marker: { size: 5 }
-    };
   }, [customerData]);
 
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
-    }).format(value);
-  };
+  const formatCurrency = (value) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(value);
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
@@ -129,7 +130,10 @@ function CustomerPurchaseDetail({ filteredData }) {
   if (!filteredData || filteredData.length === 0) {
     return (
       <div className="customer-purchase-detail">
-        <h2 className="section-title"><User size={22} style={{marginRight: '0.5rem', verticalAlign: 'middle'}}/> Customer-wise Purchase Detail</h2>
+        <h2 className="section-title">
+          <User size={22} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+          Customer-wise Purchase Detail
+        </h2>
         <p className="no-data-message">No data available.</p>
       </div>
     );
@@ -137,23 +141,30 @@ function CustomerPurchaseDetail({ filteredData }) {
 
   return (
     <div className="customer-purchase-detail">
-      <h2 className="section-title"><User size={22} style={{marginRight: '0.5rem', verticalAlign: 'middle'}}/> Customer-wise Purchase Detail</h2>
+      <h2 className="section-title">
+        <User size={22} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+        Customer-wise Purchase Detail
+      </h2>
 
       {/* Customer Selection */}
       <div className="customer-selector-section">
         <div className="selector-group">
           <label>Select Customer(s) to Analyze</label>
           <Select
+            isMulti
             options={customerOptions}
-            value={selectedCustomer}
-            onChange={setSelectedCustomer}
-            placeholder="Choose a customer..."
+            value={selectedCustomers}
+            onChange={(val) => {
+              setSelectedCustomers(val || []);
+              setCurrentPage(1);
+            }}
+            placeholder="Choose one or more customers..."
             className="react-select-container"
             classNamePrefix="react-select"
           />
         </div>
 
-        {selectedCustomer && (
+        {selectedCustomers.length > 0 && (
           <div className="date-range-selector">
             <label>Select Date Range for Purchase Analysis</label>
             <div className="date-picker-row">
@@ -184,7 +195,7 @@ function CustomerPurchaseDetail({ filteredData }) {
         )}
       </div>
 
-      {selectedCustomer && customerData.length > 0 && (
+      {selectedCustomers.length > 0 && customerData.length > 0 && (
         <>
           {/* Filtered Purchase Records */}
           <div className="purchase-records-section">
@@ -212,8 +223,26 @@ function CustomerPurchaseDetail({ filteredData }) {
                   ))}
                 </tbody>
               </table>
-              {customerData.length > 10 && (
-                <p className="table-note">Showing most recent 10 of {customerData.length} records</p>
+              {allPurchaseRecords.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', padding: '0.5rem', background: '#f8fafc', borderRadius: '8px' }}>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.5rem 1rem', background: currentPage === 1 ? '#e2e8f0' : '#fff', color: currentPage === 1 ? '#94a3b8' : '#3b82f6', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 500, fontSize: '0.875rem' }}
+                  >
+                    <ChevronLeft size={16} /> Previous
+                  </button>
+                  <div style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 500 }}>
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, allPurchaseRecords.length)} of {allPurchaseRecords.length} records (Page {currentPage} of {totalPages})
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage >= totalPages}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.5rem 1rem', background: currentPage >= totalPages ? '#e2e8f0' : '#fff', color: currentPage >= totalPages ? '#94a3b8' : '#3b82f6', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer', fontWeight: 500, fontSize: '0.875rem' }}
+                  >
+                    Next <ChevronRight size={16} />
+                  </button>
+                </div>
               )}
             </div>
 
@@ -229,14 +258,16 @@ function CustomerPurchaseDetail({ filteredData }) {
             <h3 className="subsection-title"><BarChart3 size={16} /> Year-wise Purchase Totals</h3>
             <div className="chart-subtitle">Annual Purchase Summary</div>
             <Plot
-              data={[yearwiseData]}
+              data={yearwiseData}
               layout={{
+                barmode: 'group',
                 font: { family: 'Inter, sans-serif', color: '#64748b' },
                 xaxis: {
                   title: 'Year',
                   showgrid: false,
                   zeroline: false,
-                  tickfont: { color: '#94a3b8' }
+                  tickfont: { color: '#94a3b8' },
+                  type: 'category'
                 },
                 yaxis: {
                   title: 'Total Sales',
@@ -247,7 +278,14 @@ function CustomerPurchaseDetail({ filteredData }) {
                 },
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 plot_bgcolor: 'rgba(0,0,0,0)',
-                margin: { l: 60, r: 20, t: 30, b: 40 },
+                margin: { l: 60, r: 20, t: 40, b: 50 },
+                legend: {
+                  orientation: 'h',
+                  x: 0.5,
+                  y: 1.15,
+                  xanchor: 'center',
+                  font: { color: '#475569', size: 11 }
+                },
                 hovermode: 'closest',
                 hoverlabel: {
                   bgcolor: '#1e293b',
@@ -255,10 +293,7 @@ function CustomerPurchaseDetail({ filteredData }) {
                   bordercolor: 'transparent'
                 }
               }}
-              config={{
-                responsive: true,
-                displayModeBar: false
-              }}
+              config={{ responsive: true, displayModeBar: false }}
               style={{ width: '100%', height: '360px' }}
             />
           </div>
@@ -268,7 +303,7 @@ function CustomerPurchaseDetail({ filteredData }) {
             <h3 className="subsection-title"><TrendingUp size={16} /> Monthly Purchase Trend</h3>
             <div className="chart-subtitle">Monthly Purchase History</div>
             <Plot
-              data={[monthlyTrendData]}
+              data={monthlyTrendData}
               layout={{
                 font: { family: 'Inter, sans-serif', color: '#64748b' },
                 xaxis: {
@@ -287,7 +322,14 @@ function CustomerPurchaseDetail({ filteredData }) {
                 },
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 plot_bgcolor: 'rgba(0,0,0,0)',
-                margin: { l: 60, r: 20, t: 30, b: 50 },
+                margin: { l: 60, r: 20, t: 40, b: 50 },
+                legend: {
+                  orientation: 'h',
+                  x: 0.5,
+                  y: 1.15,
+                  xanchor: 'center',
+                  font: { color: '#475569', size: 11 }
+                },
                 hovermode: 'closest',
                 hoverlabel: {
                   bgcolor: '#1e293b',
@@ -295,17 +337,14 @@ function CustomerPurchaseDetail({ filteredData }) {
                   bordercolor: 'transparent'
                 }
               }}
-              config={{
-                responsive: true,
-                displayModeBar: false
-              }}
+              config={{ responsive: true, displayModeBar: false }}
               style={{ width: '100%', height: '380px' }}
             />
           </div>
         </>
       )}
 
-      {selectedCustomer && customerData.length === 0 && (
+      {selectedCustomers.length > 0 && customerData.length === 0 && (
         <p className="no-data-message">No purchase records found for the selected criteria.</p>
       )}
     </div>

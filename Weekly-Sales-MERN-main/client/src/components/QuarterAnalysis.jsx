@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import Select from 'react-select';
 import Plot from 'react-plotly.js';
-import { Calendar, BarChart3, ChevronDown, List as ListIcon, TrendingUp } from 'lucide-react';
+import { Calendar, BarChart3, ChevronDown, ChevronLeft, ChevronRight, List as ListIcon, TrendingUp } from 'lucide-react';
 import './QuarterAnalysis.css';
 
 function QuarterAnalysis({ historicalData, selectedBranches = [] }) {
   const [selectedQuarters, setSelectedQuarters] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Calculate quarter from week number
   const getQuarter = (week) => {
@@ -121,6 +123,12 @@ function QuarterAnalysis({ historicalData, selectedBranches = [] }) {
     return filteredQuarterData.reduce((sum, row) => sum + row.total, 0);
   }, [filteredQuarterData]);
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredQuarterData.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredQuarterData.slice(indexOfFirstItem, indexOfLastItem);
+
   // Sales trend chart for selected quarters
   const salesTrendChart = useMemo(() => {
     if (filteredQuarterData.length === 0) return [];
@@ -169,39 +177,6 @@ function QuarterAnalysis({ historicalData, selectedBranches = [] }) {
     <div className="quarter-analysis">
       <h2 className="section-title"><Calendar size={22} style={{marginRight: '0.5rem', verticalAlign: 'middle'}}/> Quarter Analysis</h2>
 
-      {/* Quarter Summary Table */}
-      <div className="quarter-summary-section">
-        <h3 className="subsection-title"><BarChart3 size={18} style={{marginRight: '0.4rem'}}/> Quarterly Sales Summary</h3>
-        <div className="table-wrapper">
-          <table className="quarter-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Financial Year</th>
-                <th>Quarter</th>
-                {displayBranches.map(branch => (
-                  <th key={branch}>{branch}</th>
-                ))}
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {quarterSummary.map((row, idx) => (
-                <tr key={idx}>
-                  <td>{idx + 1}</td>
-                  <td>{row.financialYear}</td>
-                  <td>{row.quarter}</td>
-                  {displayBranches.map(branch => (
-                    <td key={branch}>{formatCurrency(row[branch] || 0)}</td>
-                  ))}
-                  <td className="total-cell">{formatCurrency(row.total)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       {/* Quarterly Sales Comparison Chart */}
       <div className="quarterly-comparison-section">
         <h3 className="subsection-title"><BarChart3 size={18} style={{marginRight: '0.4rem'}}/> Quarterly Sales Comparison</h3>
@@ -248,6 +223,39 @@ function QuarterAnalysis({ historicalData, selectedBranches = [] }) {
         />
       </div>
 
+      {/* Quarter Summary Table */}
+      <div className="quarter-summary-section">
+        <h3 className="subsection-title"><BarChart3 size={18} style={{marginRight: '0.4rem'}}/> Quarterly Sales Summary</h3>
+        <div className="table-wrapper">
+          <table className="quarter-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Financial Year</th>
+                <th>Quarter</th>
+                {displayBranches.map(branch => (
+                  <th key={branch}>{branch}</th>
+                ))}
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {quarterSummary.map((row, idx) => (
+                <tr key={idx}>
+                  <td>{idx + 1}</td>
+                  <td>{row.financialYear}</td>
+                  <td>{row.quarter}</td>
+                  {displayBranches.map(branch => (
+                    <td key={branch}>{formatCurrency(row[branch] || 0)}</td>
+                  ))}
+                  <td className="total-cell">{formatCurrency(row.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Select Specific Quarters */}
       <div className="quarter-selector-section">
         <h3 className="subsection-title"><ChevronDown size={18} style={{marginRight: '0.4rem'}}/> Select Specific Quarter(s)</h3>
@@ -255,7 +263,10 @@ function QuarterAnalysis({ historicalData, selectedBranches = [] }) {
           isMulti
           options={quarterOptions}
           value={selectedQuarters}
-          onChange={setSelectedQuarters}
+          onChange={(val) => {
+            setSelectedQuarters(val);
+            setCurrentPage(1);
+          }}
           placeholder="Choose quarters..."
           className="react-select-container"
           classNamePrefix="react-select"
@@ -278,7 +289,7 @@ function QuarterAnalysis({ historicalData, selectedBranches = [] }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredQuarterData.slice(0, 10).map((row, idx) => (
+                  {currentItems.map((row, idx) => (
                     <tr key={idx}>
                       <td>{row.branch}</td>
                       <td>{row.financialYear}</td>
@@ -288,8 +299,26 @@ function QuarterAnalysis({ historicalData, selectedBranches = [] }) {
                   ))}
                 </tbody>
               </table>
-              {filteredQuarterData.length > 10 && (
-                <p className="table-note">Showing first 10 of {filteredQuarterData.length} records</p>
+              {filteredQuarterData.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', padding: '0.5rem', background: '#f8fafc', borderRadius: '8px' }}>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.5rem 1rem', background: currentPage === 1 ? '#e2e8f0' : '#fff', color: currentPage === 1 ? '#94a3b8' : '#3b82f6', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 500, transition: 'all 0.2s', fontSize: '0.875rem' }}
+                  >
+                    <ChevronLeft size={16} /> Previous
+                  </button>
+                  <div style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 500 }}>
+                    Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredQuarterData.length)} of {filteredQuarterData.length} records (Page {currentPage} of {totalPages})
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage >= totalPages}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.5rem 1rem', background: currentPage >= totalPages ? '#e2e8f0' : '#fff', color: currentPage >= totalPages ? '#94a3b8' : '#3b82f6', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer', fontWeight: 500, transition: 'all 0.2s', fontSize: '0.875rem' }}
+                  >
+                    Next <ChevronRight size={16} />
+                  </button>
+                </div>
               )}
             </div>
 
