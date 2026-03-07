@@ -25,10 +25,10 @@ app.use(express.json());
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     message: 'Shared storage backend is running',
-    activeSessions: fileStorage.size 
+    activeSessions: fileStorage.size
   });
 });
 
@@ -42,10 +42,10 @@ app.post('/api/upload', upload.fields([
 ]), (req, res) => {
   try {
     console.log('=== File Upload Request ===');
-    
+
     const sessionId = uuidv4();
     const files = {};
-    
+
     // Store uploaded files in memory
     if (req.files) {
       if (req.files.nsw) {
@@ -89,7 +89,7 @@ app.post('/api/upload', upload.fields([
         };
       }
     }
-    
+
     // Store with session ID
     fileStorage.set(sessionId, {
       files,
@@ -97,9 +97,9 @@ app.post('/api/upload', upload.fields([
       timestamp: new Date().toISOString(),
       expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
     });
-    
+
     console.log(`Session ${sessionId} created with files:`, Object.keys(files));
-    
+
     res.json({
       success: true,
       sessionId,
@@ -118,16 +118,16 @@ app.post('/api/upload', upload.fields([
 // Get files by session ID
 app.get('/api/session/:sessionId', (req, res) => {
   const { sessionId } = req.params;
-  
+
   if (!fileStorage.has(sessionId)) {
     return res.status(404).json({
       success: false,
       error: 'Session not found or expired'
     });
   }
-  
+
   const session = fileStorage.get(sessionId);
-  
+
   // Check if expired
   if (Date.now() > session.expiresAt) {
     fileStorage.delete(sessionId);
@@ -136,14 +136,14 @@ app.get('/api/session/:sessionId', (req, res) => {
       error: 'Session expired'
     });
   }
-  
+
   // Return file metadata (not buffers)
   const metadata = {
     uploadMode: session.uploadMode,
     timestamp: session.timestamp,
     files: {}
   };
-  
+
   Object.keys(session.files).forEach(key => {
     metadata.files[key] = {
       originalname: session.files[key].originalname,
@@ -151,7 +151,7 @@ app.get('/api/session/:sessionId', (req, res) => {
       size: session.files[key].size
     };
   });
-  
+
   res.json({
     success: true,
     session: metadata
@@ -161,25 +161,25 @@ app.get('/api/session/:sessionId', (req, res) => {
 // Download specific file from session
 app.get('/api/session/:sessionId/file/:filename', (req, res) => {
   const { sessionId, filename } = req.params;
-  
+
   if (!fileStorage.has(sessionId)) {
     return res.status(404).json({
       success: false,
       error: 'Session not found'
     });
   }
-  
+
   const session = fileStorage.get(sessionId);
-  
+
   if (!session.files[filename]) {
     return res.status(404).json({
       success: false,
       error: 'File not found in session'
     });
   }
-  
+
   const file = session.files[filename];
-  
+
   res.setHeader('Content-Type', file.mimetype);
   res.setHeader('Content-Disposition', `attachment; filename="${file.originalname}"`);
   res.send(file.buffer);
@@ -188,16 +188,16 @@ app.get('/api/session/:sessionId/file/:filename', (req, res) => {
 // Get all files as FormData (for forwarding to dashboards)
 app.post('/api/session/:sessionId/forward', (req, res) => {
   const { sessionId } = req.params;
-  
+
   if (!fileStorage.has(sessionId)) {
     return res.status(404).json({
       success: false,
       error: 'Session not found'
     });
   }
-  
+
   const session = fileStorage.get(sessionId);
-  
+
   // Return files as JSON with base64 encoded buffers
   const filesData = {};
   Object.keys(session.files).forEach(key => {
@@ -207,7 +207,7 @@ app.post('/api/session/:sessionId/forward', (req, res) => {
       mimetype: session.files[key].mimetype
     };
   });
-  
+
   res.json({
     success: true,
     uploadMode: session.uploadMode,
@@ -219,26 +219,23 @@ app.post('/api/session/:sessionId/forward', (req, res) => {
 setInterval(() => {
   const now = Date.now();
   let expiredCount = 0;
-  
+
   for (const [sessionId, session] of fileStorage.entries()) {
     if (now > session.expiresAt) {
       fileStorage.delete(sessionId);
       expiredCount++;
     }
   }
-  
+
   if (expiredCount > 0) {
     console.log(`Cleaned up ${expiredCount} expired sessions`);
   }
 }, 60 * 60 * 1000); // Every hour
 
-// For local development
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`🚀 Shared storage backend running on port ${PORT}`);
-    console.log(`📦 Health check: http://localhost:${PORT}/health`);
-  });
-}
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Shared storage backend running on port ${PORT}`);
+  console.log(`📦 Health check: http://localhost:${PORT}/health`);
+});
 
-// Export for Vercel serverless
+// Export for other uses
 module.exports = app;
