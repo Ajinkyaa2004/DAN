@@ -56,12 +56,6 @@ export function BP3CashOutstanding({ data }: { data: AnalysisResponse }) {
 
   return (
     <div className="space-y-6">
-      <DataGapBanner
-        severity="info"
-        title="Outstanding Balance Data Detected"
-        message="Outstanding balance tracking is enabled. Note: This shows unpaid balances only. For complete payment tracking (Payment Status, Paid Amount, Payment Date), integrate with your accounting system (e.g., Xero, QuickBooks)."
-      />
-
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MetricCard
           label="Total Billed"
@@ -73,8 +67,8 @@ export function BP3CashOutstanding({ data }: { data: AnalysisResponse }) {
         />
         <MetricCard
           label="Stuck %"
-          value={formatPercentPlain(cash.stuckPct)}
-          delta={stuckIsHigh ? `${cash.stuckPct.toFixed(1)}% requires attention` : cash.stuckPct >= CASH_THRESHOLDS.NORMAL ? "Within normal range" : "Healthy"}
+          value=""
+          delta={stuckIsHigh ? "Requires attention" : cash.stuckPct >= CASH_THRESHOLDS.NORMAL ? "Within normal range" : "Healthy"}
           deltaDirection={stuckIsHigh ? "down" : "neutral"}
           className={stuckIsHigh ? "border-destructive/50" : undefined}
         />

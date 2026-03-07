@@ -1485,7 +1485,7 @@ export async function transformData(
         ? `${seasonalityData.length} seasonal periods identified. Peak: ${seasonalityData.reduce((max, p) => p.revenue > max.revenue ? p : max).period}`
         : 'No date information available for seasonality analysis',
       bp7: revenueTarget ? `${((totalRevenue / revenueTarget) * 100).toFixed(1)}% of target` : "No target set",
-      bp8: `${data.length} total transactions analyzed`,
+      bp8: `Leverage historical sales patterns to forecast upcoming demand and optimize branch resource allocation.`,
       bp9: `${topCustomersByRevenue.length} unique customers identified`,
     },
 
@@ -2990,7 +2990,7 @@ export async function transformMultiBranchData(
         ? `${seasonalityData.length} seasonal periods identified. Peak: ${seasonalityData.reduce((max, p) => p.revenue > max.revenue ? p : max).period}`
         : 'No date information available for seasonality analysis',
       bp7: revenueTarget ? `${((totalRevenue / revenueTarget) * 100).toFixed(1)}% of target` : "No target set",
-      bp8: `${combinedData.length} total transactions analyzed`,
+      bp8: `Leverage historical sales patterns to forecast upcoming demand and optimize branch resource allocation.`,
       bp9: `${topCustomersByRevenue.length} unique customers across all branches`,
     },
 
